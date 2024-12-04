@@ -1,0 +1,29 @@
+<RCC>
+    <qresource prefix="/qss">
+        <file>styles/style.qss</file>
+    </qresource>
+    <qresource prefix="/translations">
+        <file>qtbase_ru.qm</file>
+    </qresource>
+    <qresource prefix="/json">
+        <file>json/modbus.json</file>
+    </qresource>
+    <qresource prefix="/icons">
+        <file>led_green_off.svg</file>
+        <file>led_green_on.svg</file>
+        <file>led_red_off.svg</file>
+        <file>led_red_on.svg</file>
+        <file>qtbase_ru.qm</file>
+        <file>resources.qrc</file>
+        <file>ACS_LOGO.svg</file>
+        <file>ACS_LOGO.ico</file>
+        <file>twostate_switch_h_off.svg</file>
+        <file>twostate_switch_h_on.svg</file>
+        <file>twostate_switch_off.svg</file>
+        <file>twostate_switch_on.svg</file>
+        <file>app_acs.ico</file>
+        <file>app_acs.svg</file>
+        <file>splash_acs.svg</file>
+    </qresource>
+    <qresource prefix="/bg"/>
+</RCC>

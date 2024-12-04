@@ -1,0 +1,24 @@
+* {
+    font-family: Ubuntu;
+}
+
+QLineEdit[fail="false"] {
+    border: 1px solid #999999;
+}
+
+QLineEdit[fail="true"] {
+    border: 1px solid #999999;
+    background-color: rgba(255, 0, 0, 30);
+}
+
+QSpinBox[fail="false"] {
+    border: 1px solid #999999;
+}
+
+QSpinBox[fail="true"] {
+    border: 1px solid #999999;
+    background-color: rgba(255, 0, 0, 30);
+}
+
+
+
