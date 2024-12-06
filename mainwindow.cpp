@@ -261,48 +261,6 @@ void MainWindow::on_random_timer() {
 }
 
 void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
-//    switch (mdu.registerType()) {
-//        case QModbusDataUnit::Coils:
-//        {
-//            qCDebug(logDebug()) << mdu.registerType() << mdu.startAddress() << mdu.valueCount() << mdu.values();
-//            for (int i = mdu.startAddress(), j = 0; i < mdu.startAddress() + (int)mdu.valueCount(); ++i, ++j) {
-//                for (const auto &_mdu : _mdum) {
-//                    qCDebug(logDebug()) << _mdu.first << _mdu.second.registerType() << _mdu.second.startAddress() << _mdu.second.valueCount() << _mdu.second.values();
-//                    if ((_mdu.second.registerType() == mdu.registerType()) &&
-//                        (_mdu.second.startAddress() == (mdu.startAddress() + j))) {
-//                        auto cb = this->ui->gb2->findChild<QCheckBox*>("cb_" + _mdu.first);
-//                        qCDebug(logDebug()) << _mdu.first << mdu.value(j);
-//                        if (cb) {
-//                            cb->setChecked(mdu.value(j));
-//                        }
-//                        break;
-//                    }
-//                }
-//            }
-//        }
-//        break;
-//        case QModbusDataUnit::HoldingRegisters:
-//        {
-//            for (int i = mdu.startAddress(), j = 0; i < mdu.startAddress() + (int)mdu.valueCount(); i = i + 4, j = j + 4) {
-//                for (const auto &_mdu : _mdum) {
-//                    if ((_mdu.second.registerType() == mdu.registerType()) &&
-//                        (_mdu.second.startAddress() == (mdu.startAddress() + j))) {
-//                        auto dsb = this->ui->gb4->findChild<QDoubleSpinBox*>("dsb_" + _mdu.first);
-//                        qCDebug(logDebug()) << _mdu.first << mdu.values()[j];
-//                        if (dsb) {
-//                            double v = usa_to_double(&mdu.values()[j]);
-//                            dsb->setValue(invert_double_order(v));
-//                        }
-//                        break;
-//                    }
-//                }
-//            }
-//        }
-//        break;
-//        default:
-
-//        break;
-//    }
     switch (mdu.registerType()) {
         case QModbusDataUnit::Coils:
         {

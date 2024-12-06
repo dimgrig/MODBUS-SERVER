@@ -174,14 +174,6 @@ public:
     int PXI_PORT = 5025;
 
     //parameters
-    float ph = 4.01;
-    float uep = 0.005;
-    float mci = 0.1;
-    float mcvv = 1;
-    float hpo = 1;
-    float mut = 2;
-    float t = 15;
-
     int MODBUS_POLL_TIMER = 500;
     QString MODBUS_IP = "192.168.3.1";
     int MODBUS_PORT = 502;

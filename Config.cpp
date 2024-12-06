@@ -129,22 +129,6 @@ Config::Config() {
         config.endGroup();
 
         //parameters
-        config.beginGroup("parameters");
-        if (config.contains(QString("ph")))
-            ph = config.value("ph", 4.01).toFloat();
-        if (config.contains(QString("uep")))
-            uep = config.value("uep", 0.005).toFloat();
-        if (config.contains(QString("mci")))
-            mci = config.value("mci", 0.1).toFloat();
-        if (config.contains(QString("mcvv")))
-            mcvv = config.value("mcvv", 1).toFloat();
-        if (config.contains(QString("hpo")))
-            hpo = config.value("hpo", 1).toFloat();
-        if (config.contains(QString("mut")))
-            mut = config.value("mut", 2).toFloat();
-        if (config.contains(QString("t")))
-            t = config.value("t", 15).toFloat();
-
         if (config.contains(QString("MODBUS_POLL_TIMER")))
             MODBUS_POLL_TIMER = config.value("MODBUS_POLL_TIMER", 500).toInt();
         if (config.contains(QString("MODBUS_IP")))

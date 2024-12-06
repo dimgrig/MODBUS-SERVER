@@ -36,7 +36,7 @@ ModbusServer::ModbusServer(QWidget *parent)
     //initActions();
 
     connect(this->ui->le_IP, &QLineEdit::editingFinished, this, &ModbusServer::settings_change);
-    connect(this->ui->le_IP, &QLineEdit::editingFinished, this, &ModbusServer::settings_change);
+    connect(this->ui->le_PORT, &QLineEdit::editingFinished, this, &ModbusServer::settings_change);
 }
 
 ModbusServer::~ModbusServer() {
