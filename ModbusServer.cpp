@@ -288,8 +288,8 @@ void ModbusServer::updateRegisters(QModbusDataUnit::RegisterType table, int addr
             case QModbusDataUnit::Coils:
             {
                 QVector<quint16> values;
-                for (int i = 0; i < size; ++i) {
-                    modbusDevice->data(mdu.second.registerType(), quint16(address + i), &value);
+                for (unsigned int i = 0; i < mdu.second.valueCount(); ++i) {
+                    modbusDevice->data(mdu.second.registerType(), quint16(mdu.second.startAddress() + i), &value);
                     values.push_back(value);
                 }
                 mdu.second.setValues(values);
@@ -298,8 +298,8 @@ void ModbusServer::updateRegisters(QModbusDataUnit::RegisterType table, int addr
             case QModbusDataUnit::HoldingRegisters:
             {
                 QVector<quint16> values;
-                for (int i = 0; i < size; ++i) {
-                    modbusDevice->data(mdu.second.registerType(), quint16(address + i), &value);
+                for (unsigned int i = 0; i < mdu.second.valueCount(); ++i) {
+                    modbusDevice->data(mdu.second.registerType(), quint16(mdu.second.startAddress() + i), &value);
                     values.push_back(value);
                 }
                 mdu.second.setValues(values);

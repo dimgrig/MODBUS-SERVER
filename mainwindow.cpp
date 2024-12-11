@@ -362,13 +362,13 @@ void create_dsb(QDoubleSpinBox* dsb, QString &name, const QModbusDataUnit &mdu) 
         dsb->setDecimals(2);
         dsb->setSingleStep(0.01);
         dsb->setMaximum(DBL_MAX);
-        dsb->setMinimum(DBL_MIN);
+        dsb->setMinimum(-DBL_MAX);
     } else if (mdu.valueCount() == 2) {
         //int
         dsb->setDecimals(0);
         dsb->setSingleStep(1);
         dsb->setMaximum(INT_MAX);
-        dsb->setMinimum(INT_MIN);
+        dsb->setMinimum(0);
     } else {
         //TODO
     }
