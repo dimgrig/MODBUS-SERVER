@@ -1,8 +1,11 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include <locale.h>
 #include <QNetworkProxy>
+#include <QScrollArea>
+
+#include <float.h>
+#include <locale.h>
 
 #include "Random.h"
 
@@ -261,6 +264,7 @@ void MainWindow::on_random_timer() {
 }
 
 void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
+    //qCDebug(logDebug()) << "modbus_read" << reg_name << mdu.startAddress() << mdu.valueCount() << mdu.values();
     switch (mdu.registerType()) {
         case QModbusDataUnit::Coils:
         {
@@ -274,8 +278,15 @@ void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
         {
             auto dsb = this->ui->gb4->findChild<QDoubleSpinBox*>("dsb_" + reg_name);
             if (dsb) {
-                double v = usa_to_double(&mdu.values()[0]);
-                dsb->setValue(invert_double_order(v));
+                if (mdu.valueCount() == 4) {
+                    double v = usa_to_double(&mdu.values()[0]);
+                    dsb->setValue(invert_double_order(v));
+                } else if (mdu.valueCount() == 2) {
+                    double v = usa_to_uint(&mdu.values()[0]);
+                    dsb->setValue(invert_uint_order(v));
+                } else {
+                    //TODO
+                }
             }
         }
         break;
@@ -325,19 +336,58 @@ void MainWindow::HoldingRegistersChanged(double value) {
     }
 }
 
+void create_gb(QGridLayout *gl, QGroupBox *gb) {
+    QGroupBox* gbi = new QGroupBox;
+    //QGridLayout *li = new QGridLayout; //gl
+    //QGroupBox *gbo = new QGroupBox; //gb
+    QVBoxLayout *lo = new QVBoxLayout;
+    QScrollArea* sa = new QScrollArea();
+
+    gbi->setLayout(gl);
+    sa->setWidget(gbi);
+    sa->setWidgetResizable(true);
+    lo->addWidget(sa);
+    gb->setLayout(lo);
+
+    sa->setWidgetResizable(true);
+    sa->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    sa->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+}
+
+void create_dsb(QDoubleSpinBox* dsb, QString &name, const QModbusDataUnit &mdu) {
+    dsb->setObjectName(QString("dsb_") + name);
+    dsb->setMinimumSize({50, 20});
+    if (mdu.valueCount() == 4) {
+        //float or double
+        dsb->setDecimals(2);
+        dsb->setSingleStep(0.01);
+        dsb->setMaximum(DBL_MAX);
+        dsb->setMinimum(DBL_MIN);
+    } else if (mdu.valueCount() == 2) {
+        //int
+        dsb->setDecimals(0);
+        dsb->setSingleStep(1);
+        dsb->setMaximum(INT_MAX);
+        dsb->setMinimum(INT_MIN);
+    } else {
+        //TODO
+    }
+}
+
 void MainWindow::modbus_ui() {
     QGridLayout *gl1 = new QGridLayout(this);
-    this->ui->gb1->setLayout(gl1);
     QGridLayout *gl2 = new QGridLayout(this);
-    this->ui->gb2->setLayout(gl2);
     QGridLayout *gl3 = new QGridLayout(this);
-    this->ui->gb3->setLayout(gl3);
     QGridLayout *gl4 = new QGridLayout(this);
-    this->ui->gb4->setLayout(gl4);
+    create_gb(gl1, this->ui->gb1);
+    create_gb(gl2, this->ui->gb2);
+    create_gb(gl3, this->ui->gb3);
+    create_gb(gl4, this->ui->gb4);
 
-    auto mdum = modbus_server->get_mdum();
+    this->_mdum = modbus_server->get_mdum();
+    auto mdum_v = modbus_server->get_sort_by_start_address_mdum_v();
 
-    for (const auto &_mdu : mdum) {
+    for (const auto &_mdu : mdum_v) { //this->_mdum
         QString name = _mdu.first;
         auto mdu = _mdu.second;
         //qCDebug(logDebug) << name << mdu.startAddress() << mdu.valueCount() << mdu.values();
@@ -372,7 +422,7 @@ void MainWindow::modbus_ui() {
             {
                 auto label = new QLabel(name, this);
                 auto dsb = new QDoubleSpinBox(this);
-                dsb->setObjectName(QString("dsb_") + name);
+                create_dsb(dsb, name, mdu);
 
                 gl3->addWidget(label, ir_v.size(), 0);
                 gl3->addWidget(dsb, ir_v.size(), 1);
@@ -390,7 +440,7 @@ void MainWindow::modbus_ui() {
             {
                 auto label = new QLabel(name, this);
                 auto dsb = new QDoubleSpinBox(this);
-                dsb->setObjectName(QString("dsb_") + name);
+                create_dsb(dsb, name, mdu);
 
                 gl4->addWidget(label, hr_v.size(), 0);
                 gl4->addWidget(dsb, hr_v.size(), 1);

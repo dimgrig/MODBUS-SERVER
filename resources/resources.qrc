@@ -7,6 +7,8 @@
     </qresource>
     <qresource prefix="/json">
         <file>json/modbus.json</file>
+        <file>json/modbus_10.json</file>
+        <file>json/modbus_nc3.json</file>
     </qresource>
     <qresource prefix="/icons">
         <file>led_green_off.svg</file>

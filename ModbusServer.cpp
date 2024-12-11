@@ -19,7 +19,7 @@ ModbusServer::ModbusServer(QWidget *parent)
     , ui(new Ui::fmodbus_server)
 {
     ui->setupUi(this);
-    this->on_read_json(this->_mdum);
+    this->on_read_json();
     //setupWidgetContainers();
 
 #if QT_CONFIG(modbus_serialport)
@@ -141,9 +141,9 @@ void ModbusServer::on_connect()
             //ui->actionDisconnect->setEnabled(true);
         }
 
-        this->_reg = this->setupDeviceData(this->_mdum);
-        modbusDevice->setMap(_reg);
-        for (const auto &value : _mdum) {
+        this->setupDeviceData();
+        modbusDevice->setMap(this->_reg);
+        for (const auto &value : this->_mdum) {
             this->modbusDevice->setData(value.second);
             //qCDebug(logDebug()) << value.first << value.second.startAddress() << value.second.valueCount() << value.second.values();
         }
@@ -195,6 +195,7 @@ void ModbusServer::settings_change() {
     this->_address = this->ui->le_IP->text() + ":" + this->ui->le_PORT->text();
     if (this->modbusDevice) {
         this->modbusDevice->disconnectDevice();
+        this->on_connect();
     }
 }
 
@@ -207,6 +208,7 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
         bool ok = true;
 
         int address = _mdum.at(reg_name).startAddress(); // + 1
+        int size = _mdum.at(reg_name).valueCount();
 
         qCDebug(logDebug) << "setRegister" << table << reg_name << value << address;
 
@@ -223,17 +225,35 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
             break;
             case QModbusDataUnit::InputRegisters:
             {
-                QVector<quint16> values(4, 0);
-                double_to_usa(invert_double_order(value), &values[0]);
-                _mdum[reg_name].setValues(values);
-                modbusDevice->setData(_mdum[reg_name]);
+                if (size == 4) {
+                    QVector<quint16> values(4, 0);
+                    double_to_usa(invert_double_order(value), &values[0]);
+                    _mdum[reg_name].setValues(values);
+                    modbusDevice->setData(_mdum[reg_name]);
+                } else if (size == 4) {
+                    QVector<quint16> values(2, 0);
+                    uint_to_usa(invert_uint_order(value), &values[0]);
+                    _mdum[reg_name].setValues(values);
+                    modbusDevice->setData(_mdum[reg_name]);
+                } else {
+                    //TODO
+                }
             }
             case QModbusDataUnit::HoldingRegisters:
             {
-                QVector<quint16> values(4, 0);
-                double_to_usa(invert_double_order(value), &values[0]);
-                _mdum[reg_name].setValues(values);
-                modbusDevice->setData(_mdum[reg_name]);
+                if (size == 4) {
+                    QVector<quint16> values(4, 0);
+                    double_to_usa(invert_double_order(value), &values[0]);
+                    _mdum[reg_name].setValues(values);
+                    modbusDevice->setData(_mdum[reg_name]);
+                } else if (size == 2) {
+                    QVector<quint16> values(2, 0);
+                    uint_to_usa(invert_uint_order(value), &values[0]);
+                    _mdum[reg_name].setValues(values);
+                    modbusDevice->setData(_mdum[reg_name]);
+                } else {
+                    //TODO
+                }
             }
             break;
             default:
@@ -256,6 +276,11 @@ void ModbusServer::updateRegisters(QModbusDataUnit::RegisterType table, int addr
     QModbusDataUnit mdu(table, address, size);
 
     auto mdum = this->update_mdu(table, address, size, this->_mdum);
+
+//    qCDebug(logDebug()) << "mdum" <<  mdum.size();
+//    for (const auto &value : mdum) {
+//        qCDebug(logDebug()) << value.first << value.second.startAddress() << value.second.valueCount() << value.second.values();
+//    }
 
     for (auto &mdu : mdum) {
         quint16 value;

@@ -1,6 +1,6 @@
 #include "Config.h"
 
-#include <QApplication>>
+#include <QApplication>
 #include <QProcess>
 
 #include "Profiler.h"
@@ -129,6 +129,7 @@ Config::Config() {
         config.endGroup();
 
         //parameters
+        config.beginGroup("parameters");
         if (config.contains(QString("MODBUS_POLL_TIMER")))
             MODBUS_POLL_TIMER = config.value("MODBUS_POLL_TIMER", 500).toInt();
         if (config.contains(QString("MODBUS_IP")))

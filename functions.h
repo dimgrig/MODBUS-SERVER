@@ -33,9 +33,11 @@ QString extract_dimension(const QString str);
 unsigned int extract_connectorPin(const QString str);
 double extract_tolerance(const QString str);
 
+unsigned int invert_uint_order(unsigned int value);
 double invert_double_order(double value);
 void uint_to_usa(unsigned int value, unsigned short *data);
 void double_to_usa(double value, unsigned short *data);
+unsigned int usa_to_uint(const unsigned short *data);
 double usa_to_double(const unsigned short *data);
 
 std::string TRANSLATION_EN_RU(std::string EN);

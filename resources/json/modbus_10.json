@@ -110,7 +110,7 @@
         "RegisterName": "coil10"
     },
     {
-        "ObjName": "INPUT",
+        "ObjName": "DISCRETEINPUT",
         "ObjType": 10000,
         "PageName": "",
         "PageType": 0,
@@ -121,7 +121,7 @@
         "RegisterName": "input1"
     },
     {
-        "ObjName": "INPUT",
+        "ObjName": "DISCRETEINPUT",
         "ObjType": 10000,
         "PageName": "",
         "PageType": 0,
@@ -132,7 +132,7 @@
         "RegisterName": "input2"
     },
     {
-        "ObjName": "INPUT",
+        "ObjName": "DISCRETEINPUT",
         "ObjType": 10000,
         "PageName": "",
         "PageType": 0,
@@ -143,7 +143,7 @@
         "RegisterName": "input3"
     },
     {
-        "ObjName": "INPUT",
+        "ObjName": "DISCRETEINPUT",
         "ObjType": 10000,
         "PageName": "",
         "PageType": 0,
@@ -154,7 +154,7 @@
         "RegisterName": "input4"
     },
     {
-        "ObjName": "INPUT",
+        "ObjName": "DISCRETEINPUT",
         "ObjType": 10000,
         "PageName": "",
         "PageType": 0,
@@ -165,7 +165,7 @@
         "RegisterName": "input5"
     },
     {
-        "ObjName": "INPUT",
+        "ObjName": "DISCRETEINPUT",
         "ObjType": 10000,
         "PageName": "",
         "PageType": 0,
@@ -176,7 +176,7 @@
         "RegisterName": "input6"
     },
     {
-        "ObjName": "INPUT",
+        "ObjName": "DISCRETEINPUT",
         "ObjType": 10000,
         "PageName": "",
         "PageType": 0,
@@ -187,7 +187,7 @@
         "RegisterName": "input7"
     },
     {
-        "ObjName": "INPUT",
+        "ObjName": "DISCRETEINPUT",
         "ObjType": 10000,
         "PageName": "",
         "PageType": 0,
@@ -198,7 +198,7 @@
         "RegisterName": "input8"
     },
     {
-        "ObjName": "INPUT",
+        "ObjName": "DISCRETEINPUT",
         "ObjType": 10000,
         "PageName": "",
         "PageType": 0,
@@ -209,7 +209,7 @@
         "RegisterName": "input9"
     },
     {
-        "ObjName": "INPUT",
+        "ObjName": "DISCRETEINPUT",
         "ObjType": 10000,
         "PageName": "",
         "PageType": 0,
@@ -220,7 +220,7 @@
         "RegisterName": "input10"
     },
     {
-        "ObjName": "DISCRETEINPUT",
+        "ObjName": "INPUT",
         "ObjType": 30000,
         "PageName": "",
         "PageType": 0,
@@ -231,7 +231,7 @@
         "RegisterName": "ir1"
     },
     {
-        "ObjName": "DISCRETEINPUT",
+        "ObjName": "INPUT",
         "ObjType": 30000,
         "PageName": "",
         "PageType": 0,
@@ -242,7 +242,7 @@
         "RegisterName": "ir2"
     },
     {
-        "ObjName": "DISCRETEINPUT",
+        "ObjName": "INPUT",
         "ObjType": 30000,
         "PageName": "",
         "PageType": 0,
@@ -253,7 +253,7 @@
         "RegisterName": "ir3"
     },
     {
-        "ObjName": "DISCRETEINPUT",
+        "ObjName": "INPUT",
         "ObjType": 30000,
         "PageName": "",
         "PageType": 0,
@@ -264,7 +264,7 @@
         "RegisterName": "ir4"
     },
     {
-        "ObjName": "DISCRETEINPUT",
+        "ObjName": "INPUT",
         "ObjType": 30000,
         "PageName": "",
         "PageType": 0,
@@ -275,7 +275,7 @@
         "RegisterName": "ir5"
     },
     {
-        "ObjName": "DISCRETEINPUT",
+        "ObjName": "INPUT",
         "ObjType": 30000,
         "PageName": "",
         "PageType": 0,
@@ -286,7 +286,7 @@
         "RegisterName": "ir6"
     },
     {
-        "ObjName": "DISCRETEINPUT",
+        "ObjName": "INPUT",
         "ObjType": 30000,
         "PageName": "",
         "PageType": 0,
@@ -297,7 +297,7 @@
         "RegisterName": "ir7"
     },
     {
-        "ObjName": "DISCRETEINPUT",
+        "ObjName": "INPUT",
         "ObjType": 30000,
         "PageName": "",
         "PageType": 0,
@@ -308,7 +308,7 @@
         "RegisterName": "ir8"
     },
     {
-        "ObjName": "DISCRETEINPUT",
+        "ObjName": "INPUT",
         "ObjType": 30000,
         "PageName": "",
         "PageType": 0,
@@ -319,7 +319,7 @@
         "RegisterName": "ir9"
     },
     {
-        "ObjName": "DISCRETEINPUT",
+        "ObjName": "INPUT",
         "ObjType": 30000,
         "PageName": "",
         "PageType": 0,

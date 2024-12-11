@@ -226,10 +226,20 @@ double extract_tolerance(const QString str) {
     return res.replace(separator_comma, separator_point).toDouble();
 }
 
+unsigned int invert_uint_order(unsigned int value) {
+    //0x408ee80000000000 -> 0x00000000e800408e
+    uint16_t *p = (uint16_t *)&value;
+    uint16_t ar[2] = {0,0};
+    ar[0] = *(p + 1);
+    ar[1] = *(p + 0);
+    unsigned int res = *((unsigned int*)ar);
+    return res;
+}
+
 double invert_double_order(double value) {
     //0x408ee80000000000 -> 0x00000000e800408e
     uint16_t *p = (uint16_t *)&value;
-    uint16_t ar[8] = {0,0,0,0};
+    uint16_t ar[4] = {0,0,0,0};
     ar[0] = *(p + 3);
     ar[1] = *(p + 2);
     ar[2] = *(p + 1);
@@ -254,6 +264,17 @@ void double_to_usa(double value, unsigned short *data) {
         data++;
         ptr++;
     }
+}
+
+unsigned int usa_to_uint(const unsigned short *data) {
+    unsigned int result = 0.0;
+    unsigned short *ptr = (unsigned short *) &result;
+    for (unsigned char i = 0; i < 2; ++i) {
+        *ptr = *data;
+        data++;
+        ptr++;
+    }
+    return result;
 }
 
 double usa_to_double(const unsigned short *data) {

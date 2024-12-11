@@ -39,6 +39,48 @@
     </sizepolicy>
    </property>
    <layout class="QGridLayout" name="gridLayout_4">
+    <item row="0" column="3" rowspan="5">
+     <widget class="QGroupBox" name="gb3">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>14</pointsize>
+       </font>
+      </property>
+      <property name="title">
+       <string>InputRegisters</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1" rowspan="5">
+     <widget class="QGroupBox" name="gb1">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>14</pointsize>
+       </font>
+      </property>
+      <property name="title">
+       <string>DiscreteInputs</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
     <item row="0" column="0" rowspan="5">
      <widget class="QGroupBox" name="gb_system_settings_2">
       <property name="font">
@@ -184,27 +226,6 @@
       </layout>
      </widget>
     </item>
-    <item row="0" column="1" rowspan="5">
-     <widget class="QGroupBox" name="gb1">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>14</pointsize>
-       </font>
-      </property>
-      <property name="title">
-       <string>DiscreteInputs</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="2" rowspan="5">
      <widget class="QGroupBox" name="gb2">
       <property name="sizePolicy">
@@ -220,27 +241,6 @@
       </property>
       <property name="title">
        <string>Coils</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="3" rowspan="5">
-     <widget class="QGroupBox" name="gb3">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>14</pointsize>
-       </font>
-      </property>
-      <property name="title">
-       <string>InputRegisters</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

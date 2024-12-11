@@ -50,9 +50,6 @@ private:
     int _server_address = 1;
     QString _address = "192.168.1.3:502";
 
-    std::map<QString, QModbusDataUnit> _mdum;
-    QModbusDataUnitMap _reg;
-
     bool _request = false;
 
     QModbusServer *modbusDevice = nullptr;
