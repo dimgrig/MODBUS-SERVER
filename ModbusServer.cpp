@@ -229,15 +229,18 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
                     QVector<quint16> values(4, 0);
                     double_to_usa(invert_double_order(value), &values[0]);
                     _mdum[reg_name].setValues(values);
-                    modbusDevice->setData(_mdum[reg_name]);
-                } else if (size == 4) {
+                } else if (size == 2) {
                     QVector<quint16> values(2, 0);
                     uint_to_usa(invert_uint_order(value), &values[0]);
                     _mdum[reg_name].setValues(values);
-                    modbusDevice->setData(_mdum[reg_name]);
+                } else if (size == 1) {
+                    QVector<quint16> values(1, 0);
+                    values.push_back(value);
+                    _mdum[reg_name].setValues(values);
                 } else {
-                    //TODO
+
                 }
+                modbusDevice->setData(_mdum[reg_name]);
             }
             case QModbusDataUnit::HoldingRegisters:
             {
@@ -245,15 +248,18 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
                     QVector<quint16> values(4, 0);
                     double_to_usa(invert_double_order(value), &values[0]);
                     _mdum[reg_name].setValues(values);
-                    modbusDevice->setData(_mdum[reg_name]);
                 } else if (size == 2) {
                     QVector<quint16> values(2, 0);
                     uint_to_usa(invert_uint_order(value), &values[0]);
                     _mdum[reg_name].setValues(values);
-                    modbusDevice->setData(_mdum[reg_name]);
+                } else if (size == 1) {
+                    QVector<quint16> values(1, 0);
+                    values.push_back(value);
+                    _mdum[reg_name].setValues(values);
                 } else {
-                    //TODO
+
                 }
+                modbusDevice->setData(_mdum[reg_name]);
             }
             break;
             default:

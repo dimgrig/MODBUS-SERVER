@@ -284,8 +284,8 @@ void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
                 } else if (mdu.valueCount() == 2) {
                     double v = usa_to_uint(&mdu.values()[0]);
                     dsb->setValue(invert_uint_order(v));
-                } else {
-                    //TODO
+                } else if (mdu.valueCount() == 1) {
+                    dsb->setValue(mdu.values()[0]);
                 }
             }
         }
@@ -363,7 +363,8 @@ void create_dsb(QDoubleSpinBox* dsb, QString &name, const QModbusDataUnit &mdu) 
         dsb->setSingleStep(0.01);
         dsb->setMaximum(DBL_MAX);
         dsb->setMinimum(-DBL_MAX);
-    } else if (mdu.valueCount() == 2) {
+    } else if ((mdu.valueCount() == 2) ||
+               (mdu.valueCount() == 1)) {
         //int
         dsb->setDecimals(0);
         dsb->setSingleStep(1);
