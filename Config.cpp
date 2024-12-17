@@ -132,10 +132,24 @@ Config::Config() {
         config.beginGroup("parameters");
         if (config.contains(QString("MODBUS_POLL_TIMER")))
             MODBUS_POLL_TIMER = config.value("MODBUS_POLL_TIMER", 500).toInt();
+        if (config.contains(QString("MODBUS_ADDRESS")))
+            MODBUS_ADDRESS = config.value("MODBUS_ADDRESS", 1).toInt();
+        if (config.contains(QString("MODBUS_TYPE")))
+            MODBUS_TYPE = config.value("MODBUS_TYPE", "TCP").toString();
         if (config.contains(QString("MODBUS_IP")))
             MODBUS_IP = config.value("MODBUS_IP", "192.168.3.1").toString();
         if (config.contains(QString("MODBUS_PORT")))
             MODBUS_PORT = config.value("MODBUS_PORT", 502).toInt();
+        if (config.contains(QString("MODBUS_SERIAL_PORT")))
+            MODBUS_SERIAL_PORT = config.value("MODBUS_SERIAL_PORT", "COM1").toString();
+        if (config.contains(QString("MODBUS_BAUDRATE")))
+            MODBUS_BAUDRATE = config.value("MODBUS_BAUDRATE", 115200).toInt();
+        if (config.contains(QString("MODBUS_DATA_BITS")))
+            MODBUS_DATA_BITS = config.value("MODBUS_DATA_BITS", 8).toInt();
+        if (config.contains(QString("MODBUS_STOP_BITS")))
+            MODBUS_STOP_BITS = config.value("MODBUS_STOP_BITS", 1).toInt();
+        if (config.contains(QString("MODBUS_PARITY")))
+            MODBUS_PARITY = config.value("MODBUS_PARITY", "NoParity").toString();
         config.endGroup();
 
         config.beginGroup("proxy");

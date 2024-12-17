@@ -32,7 +32,6 @@ signals:
 public slots:
     void on_connect_type(int index);
     void on_connect();
-    //void onCurrentConnectTypeChanged(int);
 
     void setRegister(QModbusDataUnit::RegisterType table, const QString &reg_name, double value);
     void updateRegisters(QModbusDataUnit::RegisterType table, int address, int size);
@@ -46,9 +45,7 @@ private slots:
 private:
     Ui::fmodbus_server *ui;
 
-    ModbusConnection _connection_type = Tcp;
-    int _server_address = 1;
-    QString _address = "192.168.1.3:502";
+    ModbusConnection _connection_type = ModbusTCP;
 
     bool _request = false;
 

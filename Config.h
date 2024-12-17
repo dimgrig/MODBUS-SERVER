@@ -175,8 +175,15 @@ public:
 
     //parameters
     int MODBUS_POLL_TIMER = 500;
+    int MODBUS_ADDRESS = 1;
+    QString MODBUS_TYPE = "TCP";
     QString MODBUS_IP = "192.168.3.1";
     int MODBUS_PORT = 502;
+    QString MODBUS_SERIAL_PORT = "COM1";
+    int MODBUS_BAUDRATE = 115200;
+    int MODBUS_DATA_BITS = 8;
+    int MODBUS_STOP_BITS = 1;
+    QString MODBUS_PARITY = "NoParity";
 
     //proxy
     bool PROXY = true;

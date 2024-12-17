@@ -90,6 +90,7 @@ void ModbusBase::setupDeviceData() {
         switch (mdu.registerType()) {
             case QModbusDataUnit::DiscreteInputs:
                 mdum_di_v.push_back(_mdu);
+            break;
             case QModbusDataUnit::Coils:
                 mdum_coil_v.push_back(_mdu);
             break;
@@ -104,6 +105,27 @@ void ModbusBase::setupDeviceData() {
             break;
         }
     }
+
+//    qCDebug(logDebug()) << "mdum_di_v";
+//    for (const auto &mdum : mdum_di_v) {
+//        auto r = mdum.second;
+//        qCDebug(logDebug()) << r.registerType() << r.startAddress() << r.valueCount() << r.values();
+//    }
+//    qCDebug(logDebug()) << "mdum_coil_v";
+//    for (const auto &mdum : mdum_coil_v) {
+//        auto r = mdum.second;
+//        qCDebug(logDebug()) << r.registerType() << r.startAddress() << r.valueCount() << r.values();
+//    }
+//    qCDebug(logDebug()) << "mdum_ir_v";
+//    for (const auto &mdum : mdum_ir_v) {
+//        auto r = mdum.second;
+//        qCDebug(logDebug()) << r.registerType() << r.startAddress() << r.valueCount() << r.values();
+//    }
+//    qCDebug(logDebug()) << "mdum_hr_v";
+//    for (const auto &mdum : mdum_hr_v) {
+//        auto r = mdum.second;
+//        qCDebug(logDebug()) << r.registerType() << r.startAddress() << r.valueCount() << r.values();
+//    }
 
     mdum_v_to_reg_v(mdum_di_v, reg_di_v);
     mdum_v_to_reg_v(mdum_coil_v, reg_coil_v);

@@ -99,7 +99,6 @@ MainWindow::MainWindow(QWidget *parent)
         QNetworkProxy::setApplicationProxy(proxy);
     }
 
-    modbus_server->on_connect_type(Tcp);
     modbus_server->on_connect();
 
     this->modbus_ui();
