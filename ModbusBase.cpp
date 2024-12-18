@@ -216,7 +216,7 @@ void ModbusBase::on_read_json() {
         QModbusDataUnit mdu(register_type, address, size); // - 1
 
         this->_mdum.emplace(reg_name, mdu);
-
+        this->_reg_type_m.emplace(reg_name, reg_type);
     }
 
 
@@ -240,9 +240,14 @@ void ModbusBase::on_read_json() {
 //        }
 //    }
 
-    qCDebug(logDebug()) << "mdum" <<  this->_mdum.size();
+    qCDebug(logDebug()) << "--------- mdum" <<  this->_mdum.size() << "------------";
     for (const auto &value : this->_mdum) {
-        qCDebug(logDebug()) << value.first << value.second.startAddress() << value.second.valueCount() << value.second.values();
+        QString reg_type;
+        if (_reg_type_m.count(value.first))  {
+            reg_type = _reg_type_m[value.first];
+        }
+        qCDebug(logDebug()) << "reg_name" << value.first << "startAddress" << value.second.startAddress() <<
+                               "valueCount" << value.second.valueCount() << "values" << value.second.values() << "reg_type" << reg_type;
     }
 }
 

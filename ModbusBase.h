@@ -74,6 +74,7 @@ public:
     std::vector<QModbusDataUnitMap> get_reg_v() const {return _reg_v;};
 
     std::vector<std::pair<QString, QModbusDataUnit>> get_sort_by_start_address_mdum_v() const;
+    std::map<QString, QString> get_reg_type_m() const {return _reg_type_m;};
 protected:
     void setupDeviceData();
     std::map<QString, QModbusDataUnit> update_mdu(QModbusDataUnit::RegisterType table, int address, int size, std::map<QString, QModbusDataUnit> &mdum);
@@ -83,6 +84,7 @@ protected:
     std::map<QString, QModbusDataUnit> _mdum;
     QModbusDataUnitMap _reg; //no blanc space between registers
     std::vector<QModbusDataUnitMap> _reg_v; //vector for splitting blanc space between registers
+    std::map<QString, QString> _reg_type_m; //map reg_name to type
 };
 
 #endif // MODBUSBASE_H

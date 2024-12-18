@@ -77,12 +77,9 @@ void ModbusServer::on_connect_type(int index) {
             qCDebug(logDebug) << (tr("Could not create Modbus client."), 5000);
         }
     } else {
-        connect(modbusDevice, &QModbusServer::stateChanged,
-                this, &ModbusServer::onModbusStateChanged);
-        connect(modbusDevice, &QModbusServer::errorOccurred,
-                this, &ModbusServer::onModbusErrorOccurred);
-        connect(modbusDevice, &QModbusServer::dataWritten,
-                this, &ModbusServer::updateRegisters);
+        connect(modbusDevice, &QModbusServer::stateChanged, this, &ModbusServer::onModbusStateChanged);
+        connect(modbusDevice, &QModbusServer::errorOccurred, this, &ModbusServer::onModbusErrorOccurred);
+        connect(modbusDevice, &QModbusServer::dataWritten, this, &ModbusServer::updateRegisters);
     }
 }
 
@@ -181,7 +178,7 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
         int address = _mdum.at(reg_name).startAddress(); // + 1
         int size = _mdum.at(reg_name).valueCount();
 
-        qCDebug(logDebug) << "setRegister" << table << reg_name << value << address;
+        qCDebug(logDebug) << "setRegister" << "reg_name" << reg_name << "registerType" << table  << "value" << value << "startAddress" << address;
 
         switch (table) {
             case QModbusDataUnit::Coils:
@@ -205,8 +202,7 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
                     uint_to_usa(invert_uint_order(value), &values[0]);
                     _mdum[reg_name].setValues(values);
                 } else if (size == 1) {
-                    QVector<quint16> values(1, 0);
-                    values.push_back(value);
+                    QVector<quint16> values(1, value);
                     _mdum[reg_name].setValues(values);
                 } else {
 
@@ -224,8 +220,7 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
                     uint_to_usa(invert_uint_order(value), &values[0]);
                     _mdum[reg_name].setValues(values);
                 } else if (size == 1) {
-                    QVector<quint16> values(1, 0);
-                    values.push_back(value);
+                    QVector<quint16> values(1, value);
                     _mdum[reg_name].setValues(values);
                 } else {
 
@@ -249,7 +244,7 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
 }
 
 void ModbusServer::updateRegisters(QModbusDataUnit::RegisterType table, int address, int size) {
-    //qCDebug(logDebug()) << "updateRegisters" << table << address << size;
+    //qCDebug(logDebug()) << "updateRegisters" << "registerType" << table << "startAddress" << address << "valueCount" << size;
     QModbusDataUnit mdu(table, address, size);
 
     auto mdum = this->update_mdu(table, address, size, this->_mdum);
@@ -286,7 +281,8 @@ void ModbusServer::updateRegisters(QModbusDataUnit::RegisterType table, int addr
             break;
         }
 
-        qCDebug(logDebug()) << "updateRegisters" << mdu.first << mdu.second.registerType() << mdu.second.startAddress() << mdu.second.valueCount() << mdu.second.values();
+//        qCDebug(logDebug()) << "updateRegisters" << "reg_name" << mdu.first << "registerType" << mdu.second.registerType() << "startAddress" << mdu.second.startAddress() <<
+//                               "valueCount" << mdu.second.valueCount() << "values" << mdu.second.values();
         emit read_ready(mdu.first, mdu.second);
     }
 }

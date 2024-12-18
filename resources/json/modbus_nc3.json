@@ -6,7 +6,7 @@
         "PageType": 0,
         "Index": 0,
         "Address": 0,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.UInt32",
         "DataLength": 2,
         "RegisterName": "parameters_status"
     },
@@ -17,7 +17,7 @@
         "PageType": 0,
         "Index": 2,
         "Address": 2,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.UInt32",
         "DataLength": 2,
         "RegisterName": "parameters_status_register"
     },
@@ -28,7 +28,7 @@
         "PageType": 0,
         "Index": 4,
         "Address": 4,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.UInt32",
         "DataLength": 2,
         "RegisterName": "parameters_di"
     },
@@ -39,7 +39,7 @@
         "PageType": 0,
         "Index": 6,
         "Address": 6,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.UInt32",
         "DataLength": 2,
         "RegisterName": "parameters_ai"
     },
@@ -50,7 +50,7 @@
         "PageType": 0,
         "Index": 8,
         "Address": 8,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Double",
         "DataLength": 4,
         "RegisterName": "parameters_position"
     },
@@ -61,7 +61,7 @@
         "PageType": 0,
         "Index": 12,
         "Address": 12,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Double",
         "DataLength": 4,
         "RegisterName": "parameters_velocity"
     },
@@ -72,7 +72,7 @@
         "PageType": 0,
         "Index": 16,
         "Address": 16,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Double",
         "DataLength": 4,
         "RegisterName": "parameters_torque"
     },
@@ -83,7 +83,7 @@
         "PageType": 0,
         "Index": 20,
         "Address": 20,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.UInt32",
         "DataLength": 2,
         "RegisterName": "parameters_warning_id"
     },
@@ -94,7 +94,7 @@
         "PageType": 0,
         "Index": 22,
         "Address": 22,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.UInt32i",
         "DataLength": 2,
         "RegisterName": "parameters_error_id"
     },
@@ -105,7 +105,7 @@
         "PageType": 0,
         "Index": 99,
         "Address": 99,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.UInt32",
         "DataLength": 2,
         "RegisterName": "control_mode"
     },
@@ -116,7 +116,7 @@
         "PageType": 0,
         "Index": 101,
         "Address": 101,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.UInt32",
         "DataLength": 2,
         "RegisterName": "control_do"
     },
@@ -127,7 +127,7 @@
         "PageType": 0,
         "Index": 103,
         "Address": 103,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Double",
         "DataLength": 4,
         "RegisterName": "control_absolute_position"
     },
@@ -138,7 +138,7 @@
         "PageType": 0,
         "Index": 107,
         "Address": 107,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Double",
         "DataLength": 4,
         "RegisterName": "control_relative_position"
     },
@@ -149,7 +149,7 @@
         "PageType": 0,
         "Index": 111,
         "Address": 111,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Double",
         "DataLength": 4,
         "RegisterName": "control_velocity"
     },
@@ -160,7 +160,7 @@
         "PageType": 0,
         "Index": 115,
         "Address": 115,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Double",
         "DataLength": 4,
         "RegisterName": "control_acceleration"
     },
@@ -171,7 +171,7 @@
         "PageType": 0,
         "Index": 119,
         "Address": 119,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Double",
         "DataLength": 4,
         "RegisterName": "control_deceleration"
     },
@@ -182,7 +182,7 @@
         "PageType": 0,
         "Index": 123,
         "Address": 123,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Double",
         "DataLength": 4,
         "RegisterName": "control_jerk"
     },
@@ -193,7 +193,7 @@
         "PageType": 0,
         "Index": 127,
         "Address": 127,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Double",
         "DataLength": 4,
         "RegisterName": "control_distance"
     },
@@ -204,7 +204,7 @@
         "PageType": 0,
         "Index": 131,
         "Address": 131,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Double",
         "DataLength": 4,
         "RegisterName": "control_position"
     },
@@ -215,7 +215,7 @@
         "PageType": 0,
         "Index": 135,
         "Address": 135,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Double",
         "DataLength": 4,
         "RegisterName": "control_end_velocity"
     }

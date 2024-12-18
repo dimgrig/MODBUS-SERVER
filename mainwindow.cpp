@@ -353,22 +353,21 @@ void create_gb(QGridLayout *gl, QGroupBox *gb) {
     sa->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 }
 
-void create_dsb(QDoubleSpinBox* dsb, QString &name, const QModbusDataUnit &mdu) {
+void create_dsb(QDoubleSpinBox* dsb, const QString &name, const QString &reg_type, const QModbusDataUnit &mdu) {
     dsb->setObjectName(QString("dsb_") + name);
     dsb->setMinimumSize({50, 20});
-    if (mdu.valueCount() == 4) {
+    if (reg_type.toLower().contains("float") || reg_type.toLower().contains("double")) {
         //float or double
         dsb->setDecimals(2);
         dsb->setSingleStep(0.01);
         dsb->setMaximum(DBL_MAX);
         dsb->setMinimum(-DBL_MAX);
-    } else if ((mdu.valueCount() == 2) ||
-               (mdu.valueCount() == 1)) {
+    } else if (reg_type.toLower().contains("uint") || reg_type.toLower().contains("int") || reg_type.toLower().contains("long")) {
         //int
         dsb->setDecimals(0);
         dsb->setSingleStep(1);
         dsb->setMaximum(INT_MAX);
-        dsb->setMinimum(0);
+        dsb->setMinimum(-INT_MAX);
     } else {
         //TODO
     }
@@ -386,10 +385,16 @@ void MainWindow::modbus_ui() {
 
     this->_mdum = modbus_server->get_mdum();
     auto mdum_v = modbus_server->get_sort_by_start_address_mdum_v();
+    auto reg_type_m = modbus_server->get_reg_type_m();
 
     for (const auto &_mdu : mdum_v) { //this->_mdum
         QString name = _mdu.first;
         auto mdu = _mdu.second;
+
+        QString reg_type = "double";
+        if (reg_type_m.count(name) > 0) {
+            reg_type = reg_type_m[name];
+        }
         //qCDebug(logDebug) << name << mdu.startAddress() << mdu.valueCount() << mdu.values();
         switch (mdu.registerType()) {
             case QModbusDataUnit::DiscreteInputs:
@@ -422,7 +427,7 @@ void MainWindow::modbus_ui() {
             {
                 auto label = new QLabel(name, this);
                 auto dsb = new QDoubleSpinBox(this);
-                create_dsb(dsb, name, mdu);
+                create_dsb(dsb, name, reg_type, mdu);
 
                 gl3->addWidget(label, ir_v.size(), 0);
                 gl3->addWidget(dsb, ir_v.size(), 1);
@@ -440,7 +445,7 @@ void MainWindow::modbus_ui() {
             {
                 auto label = new QLabel(name, this);
                 auto dsb = new QDoubleSpinBox(this);
-                create_dsb(dsb, name, mdu);
+                create_dsb(dsb, name, reg_type, mdu);
 
                 gl4->addWidget(label, hr_v.size(), 0);
                 gl4->addWidget(dsb, hr_v.size(), 1);
