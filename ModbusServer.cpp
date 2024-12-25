@@ -192,30 +192,27 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
             }
             break;
             case QModbusDataUnit::InputRegisters:
-            {
-                if (size == 4) {
-                    QVector<quint16> values(4, 0);
-                    double_to_usa(invert_double_order(value), &values[0]);
-                    _mdum[reg_name].setValues(values);
-                } else if (size == 2) {
-                    QVector<quint16> values(2, 0);
-                    uint_to_usa(invert_uint_order(value), &values[0]);
-                    _mdum[reg_name].setValues(values);
-                } else if (size == 1) {
-                    QVector<quint16> values(1, value);
-                    _mdum[reg_name].setValues(values);
-                } else {
-
-                }
-                modbusDevice->setData(_mdum[reg_name]);
-            }
             case QModbusDataUnit::HoldingRegisters:
             {
-                if (size == 4) {
+                auto reg_type_m = this->get_reg_type_m();
+                QString reg_type = "double";
+                if (reg_type_m.count(reg_name) > 0) {
+                    reg_type = reg_type_m[reg_name];
+                }
+
+                if ((size == 4) && (reg_type.toLower().contains("double"))) {
                     QVector<quint16> values(4, 0);
                     double_to_usa(invert_double_order(value), &values[0]);
                     _mdum[reg_name].setValues(values);
-                } else if (size == 2) {
+                } else if ((size == 4) && (reg_type.toLower().contains("long"))) {
+                    QVector<quint16> values(4, 0);
+                    long_to_usa(invert_long_order(value), &values[0]);
+                    _mdum[reg_name].setValues(values);
+                } else if ((size == 2) && (reg_type.toLower().contains("float"))) {
+                    QVector<quint16> values(2, 0);
+                    float_to_usa(invert_float_order(value), &values[0]);
+                    _mdum[reg_name].setValues(values);
+                } else if ((size == 2) && (reg_type.toLower().contains("int"))) {
                     QVector<quint16> values(2, 0);
                     uint_to_usa(invert_uint_order(value), &values[0]);
                     _mdum[reg_name].setValues(values);
@@ -225,6 +222,7 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
                 } else {
 
                 }
+
                 modbusDevice->setData(_mdum[reg_name]);
             }
             break;

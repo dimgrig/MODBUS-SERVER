@@ -315,7 +315,7 @@
         "Index": 9,
         "Address": 18,
         "RegisterType": "System.Long",
-        "DataLength": 2,
+        "DataLength": 4,
         "RegisterName": "ir9"
     },
     {
@@ -324,9 +324,9 @@
         "PageName": "",
         "PageType": 0,
         "Index": 10,
-        "Address": 20,
+        "Address": 22,
         "RegisterType": "System.Long",
-        "DataLength": 2,
+        "DataLength": 4,
         "RegisterName": "ir10"
     },
     {
@@ -425,7 +425,7 @@
         "Index": 9,
         "Address": 18,
         "RegisterType": "System.Long",
-        "DataLength": 2,
+        "DataLength": 4,
         "RegisterName": "hr9"
     },
     {
@@ -434,9 +434,9 @@
         "PageName": "",
         "PageType": 0,
         "Index": 10,
-        "Address": 20,
+        "Address": 22,
         "RegisterType": "System.Long",
-        "DataLength": 2,
+        "DataLength": 4,
         "RegisterName": "hr10"
     }
 ]

@@ -236,6 +236,28 @@ unsigned int invert_uint_order(unsigned int value) {
     return res;
 }
 
+long invert_long_order(long value) {
+    //0x408ee80000000000 -> 0x00000000e800408e
+    uint16_t *p = (uint16_t *)&value;
+    uint16_t ar[4] = {0,0,0,0};
+    ar[0] = *(p + 3);
+    ar[1] = *(p + 2);
+    ar[2] = *(p + 1);
+    ar[3] = *(p + 0);
+    long res = *((long*)ar);
+    return res;
+}
+
+float invert_float_order(float value) {
+    //0x408ee80000000000 -> 0x00000000e800408e
+    uint16_t *p = (uint16_t *)&value;
+    uint16_t ar[2] = {0,0};
+    ar[0] = *(p + 1);
+    ar[1] = *(p + 0);
+    float res = *((float*)ar);
+    return res;
+}
+
 double invert_double_order(double value) {
     //0x408ee80000000000 -> 0x00000000e800408e
     uint16_t *p = (uint16_t *)&value;
@@ -249,6 +271,24 @@ double invert_double_order(double value) {
 }
 
 void uint_to_usa(unsigned int value, unsigned short *data) {
+    unsigned short *ptr = (unsigned short *) &value;
+    for (unsigned char i = 0; i < 2; ++i) {
+        *data = *ptr;
+        data++;
+        ptr++;
+    }
+}
+
+void long_to_usa(long value, unsigned short *data) {
+    unsigned short *ptr = (unsigned short *) &value;
+    for (unsigned char i = 0; i < 4; ++i) {
+        *data = *ptr;
+        data++;
+        ptr++;
+    }
+}
+
+void float_to_usa(float value, unsigned short *data) {
     unsigned short *ptr = (unsigned short *) &value;
     for (unsigned char i = 0; i < 2; ++i) {
         *data = *ptr;
@@ -277,6 +317,28 @@ unsigned int usa_to_uint(const unsigned short *data) {
     return result;
 }
 
+long usa_to_long(const unsigned short *data) {
+    long result = 0.0;
+    unsigned short *ptr = (unsigned short *) &result;
+    for (unsigned char i = 0; i < 4; ++i) {
+        *ptr = *data;
+        data++;
+        ptr++;
+    }
+    return result;
+}
+
+float usa_to_float(const unsigned short *data) {
+    float result = 0.0;
+    unsigned short *ptr = (unsigned short *) &result;
+    for (unsigned char i = 0; i < 2; ++i) {
+        *ptr = *data;
+        data++;
+        ptr++;
+    }
+    return result;
+}
+
 double usa_to_double(const unsigned short *data) {
     double result = 0.0;
     unsigned short *ptr = (unsigned short *) &result;
@@ -287,6 +349,34 @@ double usa_to_double(const unsigned short *data) {
     }
     return result;
 }
+
+//unsigned int little_endian_uint(unsigned int value) {
+//    //0x0000f042 -> 0x42f00000
+//    uint8_t *p = (uint8_t *)&value;
+//    uint8_t ar[4] = {0,0,0,0};
+//    ar[0] = *(p + 1);
+//    ar[1] = *(p + 0);
+//    ar[2] = *(p + 3);
+//    ar[3] = *(p + 2);
+//    unsigned int res = *((unsigned int*)ar);
+//    return res;
+//}
+
+//double little_endian_double(double value) {
+//    //0x0000f042 -> 0x42f00000
+//    uint8_t *p = (uint8_t *)&value;
+//    uint8_t ar[8] = {0,0,0,0,0,0,0,0};
+//    ar[0] = *(p + 1);
+//    ar[1] = *(p + 0);
+//    ar[2] = *(p + 3);
+//    ar[3] = *(p + 2);
+//    ar[4] = *(p + 5);
+//    ar[5] = *(p + 4);
+//    ar[6] = *(p + 7);
+//    ar[7] = *(p + 6);
+//    double res = *((double*)ar);
+//    return res;
+//}
 
 void FunctionsTest() {
     {

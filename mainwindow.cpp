@@ -276,15 +276,29 @@ void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
         case QModbusDataUnit::HoldingRegisters:
         {
             auto dsb = this->ui->gb4->findChild<QDoubleSpinBox*>("dsb_" + reg_name);
-            if (dsb) {
-                if (mdu.valueCount() == 4) {
+            if (dsb) {                
+                auto reg_type_m = modbus_server->get_reg_type_m();
+                QString reg_type = "double";
+                if (reg_type_m.count(reg_name) > 0) {
+                    reg_type = reg_type_m[reg_name];
+                }
+
+                if ((mdu.valueCount() == 4) && (reg_type.toLower().contains("double"))) {
                     double v = usa_to_double(&mdu.values()[0]);
                     dsb->setValue(invert_double_order(v));
-                } else if (mdu.valueCount() == 2) {
-                    double v = usa_to_uint(&mdu.values()[0]);
+                } else if ((mdu.valueCount() == 4) && (reg_type.toLower().contains("long"))) {
+                    long v = usa_to_long(&mdu.values()[0]);
+                    dsb->setValue(invert_long_order(v));
+                } else if ((mdu.valueCount() == 2) && (reg_type.toLower().contains("float"))) {
+                    float v = usa_to_float(&mdu.values()[0]);
+                    dsb->setValue(invert_float_order(v));
+                } else if ((mdu.valueCount() == 2) && (reg_type.toLower().contains("int"))) {
+                    unsigned int v = usa_to_uint(&mdu.values()[0]);
                     dsb->setValue(invert_uint_order(v));
                 } else if (mdu.valueCount() == 1) {
                     dsb->setValue(mdu.values()[0]);
+                } else {
+
                 }
             }
         }
