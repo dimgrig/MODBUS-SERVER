@@ -242,7 +242,7 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
 }
 
 void ModbusServer::updateRegisters(QModbusDataUnit::RegisterType table, int address, int size) {
-    //qCDebug(logDebug()) << "updateRegisters" << "registerType" << table << "startAddress" << address << "valueCount" << size;
+    qCDebug(logDebug()) << "updateRegisters" << "registerType" << table << "startAddress" << address << "valueCount" << size;
     QModbusDataUnit mdu(table, address, size);
 
     auto mdum = this->update_mdu(table, address, size, this->_mdum);

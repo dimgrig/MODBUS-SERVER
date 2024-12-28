@@ -287,7 +287,7 @@ void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
                     double v = usa_to_double(&mdu.values()[0]);
                     dsb->setValue(invert_double_order(v));
                 } else if ((mdu.valueCount() == 4) && (reg_type.toLower().contains("long"))) {
-                    long v = usa_to_long(&mdu.values()[0]);
+                    long long v = usa_to_long(&mdu.values()[0]);
                     dsb->setValue(invert_long_order(v));
                 } else if ((mdu.valueCount() == 2) && (reg_type.toLower().contains("float"))) {
                     float v = usa_to_float(&mdu.values()[0]);
