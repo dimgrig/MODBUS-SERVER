@@ -263,7 +263,7 @@ void MainWindow::on_random_timer() {
 }
 
 void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
-    //qCDebug(logDebug()) << "modbus_read" << reg_name << mdu.startAddress() << mdu.valueCount() << mdu.values();
+    qCDebug(logDebug()) << "modbus_read" << reg_name << mdu.startAddress() << mdu.valueCount() << mdu.values();
     switch (mdu.registerType()) {
         case QModbusDataUnit::Coils:
         {
@@ -376,12 +376,30 @@ void create_dsb(QDoubleSpinBox* dsb, const QString &name, const QString &reg_typ
         dsb->setSingleStep(0.01);
         dsb->setMaximum(DBL_MAX);
         dsb->setMinimum(-DBL_MAX);
-    } else if (reg_type.toLower().contains("uint") || reg_type.toLower().contains("int") || reg_type.toLower().contains("long")) {
+    } else if (reg_type.toLower().contains("uint")) {
+        //int
+        dsb->setDecimals(0);
+        dsb->setSingleStep(1);
+        dsb->setMaximum(UINT_MAX);
+        dsb->setMinimum(-UINT_MAX);
+    } else if (reg_type.toLower().contains("int")) {
         //int
         dsb->setDecimals(0);
         dsb->setSingleStep(1);
         dsb->setMaximum(INT_MAX);
         dsb->setMinimum(-INT_MAX);
+    } else if (reg_type.toLower().contains("ulong")) {
+        //int
+        dsb->setDecimals(0);
+        dsb->setSingleStep(1);
+        dsb->setMaximum((double)ULONG_MAX);
+        dsb->setMinimum((double)-LONG_MAX);
+    } else if (reg_type.toLower().contains("long")) {
+        //int
+        dsb->setDecimals(0);
+        dsb->setSingleStep(1);
+        dsb->setMaximum((double)LONG_MAX);
+        dsb->setMinimum((double)-LONG_MAX);
     } else {
         //TODO
     }

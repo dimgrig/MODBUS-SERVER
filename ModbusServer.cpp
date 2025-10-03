@@ -72,9 +72,9 @@ void ModbusServer::on_connect_type(int index) {
 
     if (!modbusDevice) {
         if (_connection_type == ModbusSerial) {
-            qCDebug(logDebug) << (tr("Could not create Modbus master."), 5000);
+            qCDebug(logDebug) << (tr("Could not create Modbus master."));
         } else if (_connection_type == ModbusTCP) {
-            qCDebug(logDebug) << (tr("Could not create Modbus client."), 5000);
+            qCDebug(logDebug) << (tr("Could not create Modbus client."));
         }
     } else {
         connect(modbusDevice, &QModbusServer::stateChanged, this, &ModbusServer::onModbusStateChanged);
@@ -231,8 +231,7 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
             break;
         }
 //        if (!ok)
-//            statusBar()->showMessage(tr("Could not set register: ") + modbusDevice->errorString(),
-//                                     5000);
+//            statusBar()->showMessage(tr("Could not set register: ") + modbusDevice->errorString());
     }
 
     // qCDebug(logDebug()) << _mdum.size();
