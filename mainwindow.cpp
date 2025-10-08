@@ -377,25 +377,25 @@ void create_dsb(QDoubleSpinBox* dsb, const QString &name, const QString &reg_typ
         dsb->setMaximum(DBL_MAX);
         dsb->setMinimum(-DBL_MAX);
     } else if (reg_type.toLower().contains("uint")) {
-        //int
+        //uint
         dsb->setDecimals(0);
         dsb->setSingleStep(1);
-        dsb->setMaximum(UINT_MAX);
-        dsb->setMinimum(-UINT_MAX);
+        dsb->setMaximum((double)UINT_MAX);
+        dsb->setMinimum(0);
     } else if (reg_type.toLower().contains("int")) {
         //int
         dsb->setDecimals(0);
         dsb->setSingleStep(1);
-        dsb->setMaximum(INT_MAX);
-        dsb->setMinimum(-INT_MAX);
+        dsb->setMaximum((double)INT_MAX);
+        dsb->setMinimum((double)-INT_MAX);
     } else if (reg_type.toLower().contains("ulong")) {
-        //int
+        //ulong
         dsb->setDecimals(0);
         dsb->setSingleStep(1);
         dsb->setMaximum((double)ULONG_MAX);
-        dsb->setMinimum((double)-LONG_MAX);
+        dsb->setMinimum(0);
     } else if (reg_type.toLower().contains("long")) {
-        //int
+        //long
         dsb->setDecimals(0);
         dsb->setSingleStep(1);
         dsb->setMaximum((double)LONG_MAX);
