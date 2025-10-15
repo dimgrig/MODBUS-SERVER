@@ -236,6 +236,16 @@ unsigned int invert_uint_order(unsigned int value) {
     return res;
 }
 
+int invert_int_order(int value) {
+    //0x408ee80000000000 -> 0x00000000e800408e
+    uint16_t *p = (uint16_t *)&value;
+    uint16_t ar[2] = {0,0};
+    ar[0] = *(p + 1);
+    ar[1] = *(p + 0);
+    int res = *((int*)ar);
+    return res;
+}
+
 long long invert_long_order(long long value) {
     //0x408ee80000000000 -> 0x00000000e800408e
     uint16_t *p = (uint16_t *)&value;
@@ -308,6 +318,17 @@ void double_to_usa(double value, unsigned short *data) {
 
 unsigned int usa_to_uint(const unsigned short *data) {
     unsigned int result = 0.0;
+    unsigned short *ptr = (unsigned short *) &result;
+    for (unsigned char i = 0; i < 2; ++i) {
+        *ptr = *data;
+        data++;
+        ptr++;
+    }
+    return result;
+}
+
+int usa_to_int(const unsigned short *data) {
+    int result = 0.0;
     unsigned short *ptr = (unsigned short *) &result;
     for (unsigned char i = 0; i < 2; ++i) {
         *ptr = *data;

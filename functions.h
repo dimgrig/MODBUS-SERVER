@@ -34,6 +34,7 @@ unsigned int extract_connectorPin(const QString str);
 double extract_tolerance(const QString str);
 
 unsigned int invert_uint_order(unsigned int value);
+int invert_int_order(int value);
 long long invert_long_order(long long value);
 float invert_float_order(float value);
 double invert_double_order(double value);
@@ -42,6 +43,7 @@ void long_to_usa(long long value, unsigned short *data);
 void float_to_usa(float value, unsigned short *data);
 void double_to_usa(double value, unsigned short *data);
 unsigned int usa_to_uint(const unsigned short *data);
+int usa_to_int(const unsigned short *data);
 long long usa_to_long(const unsigned short *data);
 float usa_to_float(const unsigned short *data);
 double usa_to_double(const unsigned short *data);
