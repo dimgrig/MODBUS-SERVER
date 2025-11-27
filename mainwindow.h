@@ -81,6 +81,8 @@ private slots:
     void CoilsChanged(bool value);
     void InputRegistersChanged(double value);
     void HoldingRegistersChanged(double value);
+    void StringInputRegistersChanged(const QString &value);
+    void StringHoldingRegistersChanged(const QString &value);
 private:
     void connect_signal_slot();
     void read_config();
@@ -111,6 +113,8 @@ private:
     std::vector<QCheckBox*> coil_v;
     std::vector<QDoubleSpinBox*> ir_v;
     std::vector<QDoubleSpinBox*> hr_v;
+    std::vector<QLineEdit*> ir_le_v;
+    std::vector<QLineEdit*> hr_le_v;
 
     std::map<QString, QModbusDataUnit> _mdum;
 

@@ -330,6 +330,17 @@
         "RegisterName": "ir10"
     },
     {
+        "ObjName": "INPUT",
+        "ObjType": 30000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 11,
+        "Address": 26,
+        "RegisterType": "System.String",
+        "DataLength": 20,
+        "RegisterName": "InputString"
+    },
+    {
         "ObjName": "HOLDING",
         "ObjType": 40000,
         "PageName": "",
@@ -438,5 +449,16 @@
         "RegisterType": "System.Long",
         "DataLength": 4,
         "RegisterName": "hr10"
+    },
+    {
+        "ObjName": "HOLDING",
+        "ObjType": 40000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 11,
+        "Address": 26,
+        "RegisterType": "System.String",
+        "DataLength": 20,
+        "RegisterName": "HoldingString"
     }
 ]

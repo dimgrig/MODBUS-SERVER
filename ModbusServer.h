@@ -34,6 +34,7 @@ public slots:
     void on_connect();
 
     void setRegister(QModbusDataUnit::RegisterType table, const QString &reg_name, double value);
+    void setRegisterString(QModbusDataUnit::RegisterType table, const QString &reg_name, const QString &value);
     void updateRegisters(QModbusDataUnit::RegisterType table, int address, int size);
 
     void read_config();

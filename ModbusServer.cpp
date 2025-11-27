@@ -240,6 +240,64 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
     // }
 }
 
+void ModbusServer::setRegisterString(QModbusDataUnit::RegisterType table, const QString &reg_name, const QString &value) {
+    if (!modbusDevice)
+        return;
+
+    if (_mdum.count(reg_name) > 0) {
+        int address = _mdum.at(reg_name).startAddress();
+        int size = _mdum.at(reg_name).valueCount();
+        int maxBytes = size * 2;
+
+        qCDebug(logDebug) << "setRegisterString" << "reg_name" << reg_name << "registerType" << table << "value" << value << "startAddress" << address;
+
+        switch (table) {
+        case QModbusDataUnit::InputRegisters:
+        case QModbusDataUnit::HoldingRegisters:
+        {
+            // Преобразуем строку в массив quint16 (каждый регистр = 2 байта)
+            QByteArray byteArray = value.toUtf8();
+
+            // Обрезаем строку, если она слишком длинная для доступного места
+            if (byteArray.size() > maxBytes - 1) { // -1 для нулевого терминатора
+                byteArray.resize(maxBytes - 1);
+                qCDebug(logWarning) << "String truncated to fit in registers:" << reg_name;
+            }
+
+            byteArray.append('\0');
+
+            int registerCount = (byteArray.size() + 1) / 2; // +1 для округления вверх
+
+            QVector<quint16> values(registerCount, 0);
+
+            for (int i = 0; i < byteArray.size(); i++) {
+                int registerIndex = i / 2;
+                if (i % 2 == 0) {
+                    // Старший байт
+                    values[registerIndex] = (byteArray[i] << 8) & 0xFF00;
+                } else {
+                    // Младший байт
+                    values[registerIndex] |= (byteArray[i] & 0x00FF);
+                }
+            }
+
+            // Заполняем оставшиеся регистры нулями (если нужно)
+            while (values.size() < size) {
+                values.append(0);
+            }
+
+            _mdum[reg_name].setValues(values);
+            modbusDevice->setData(_mdum[reg_name]);
+            //qCDebug(logDebug) << "setRegisterString" << reg_name << value << "as" << values;
+        }
+        break;
+        default:
+            qCDebug(logWarning) << "String write not supported for register type:" << table;
+            break;
+        }
+    }
+}
+
 void ModbusServer::updateRegisters(QModbusDataUnit::RegisterType table, int address, int size) {
     qCDebug(logDebug()) << "updateRegisters" << "registerType" << table << "startAddress" << address << "valueCount" << size;
     QModbusDataUnit mdu(table, address, size);
