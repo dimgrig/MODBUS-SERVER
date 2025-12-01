@@ -333,6 +333,9 @@ void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
                     if ((mdu.valueCount() == 4) && (reg_type.toLower().contains("double"))) {
                         double v = usa_to_double(&mdu.values()[0]);
                         dsb->setValue(invert_double_order(v));
+                    } else if ((mdu.valueCount() == 4) && (reg_type.toLower().contains("ulong"))) {
+                        unsigned long long v = usa_to_ulong(&mdu.values()[0]);
+                        dsb->setValue(invert_ulong_order(v));
                     } else if ((mdu.valueCount() == 4) && (reg_type.toLower().contains("long"))) {
                         long long v = usa_to_long(&mdu.values()[0]);
                         dsb->setValue(invert_long_order(v));

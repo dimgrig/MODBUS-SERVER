@@ -246,6 +246,18 @@ int invert_int_order(int value) {
     return res;
 }
 
+unsigned long long invert_ulong_order(unsigned long long value) {
+    //0x408ee80000000000 -> 0x00000000e800408e
+    uint16_t *p = (uint16_t *)&value;
+    uint16_t ar[4] = {0,0,0,0};
+    ar[0] = *(p + 3);
+    ar[1] = *(p + 2);
+    ar[2] = *(p + 1);
+    ar[3] = *(p + 0);
+    unsigned long long res = *((unsigned long long*)ar);
+    return res;
+}
+
 long long invert_long_order(long long value) {
     //0x408ee80000000000 -> 0x00000000e800408e
     uint16_t *p = (uint16_t *)&value;
@@ -253,7 +265,7 @@ long long invert_long_order(long long value) {
     ar[0] = *(p + 3);
     ar[1] = *(p + 2);
     ar[2] = *(p + 1);
-    ar[3] = *(p + 0);     
+    ar[3] = *(p + 0);
     long long res = *((long long*)ar);
     return res;
 }
@@ -283,6 +295,24 @@ double invert_double_order(double value) {
 void uint_to_usa(unsigned int value, unsigned short *data) {
     unsigned short *ptr = (unsigned short *) &value;
     for (unsigned char i = 0; i < 2; ++i) {
+        *data = *ptr;
+        data++;
+        ptr++;
+    }
+}
+
+void int_to_usa(int value, unsigned short *data) {
+    unsigned short *ptr = (unsigned short *) &value;
+    for (unsigned char i = 0; i < 2; ++i) {
+        *data = *ptr;
+        data++;
+        ptr++;
+    }
+}
+
+void ulong_to_usa(unsigned long long value, unsigned short *data) {
+    unsigned short *ptr = (unsigned short *) &value;
+    for (unsigned char i = 0; i < 4; ++i) {
         *data = *ptr;
         data++;
         ptr++;
@@ -331,6 +361,17 @@ int usa_to_int(const unsigned short *data) {
     int result = 0.0;
     unsigned short *ptr = (unsigned short *) &result;
     for (unsigned char i = 0; i < 2; ++i) {
+        *ptr = *data;
+        data++;
+        ptr++;
+    }
+    return result;
+}
+
+unsigned long long usa_to_ulong(const unsigned short *data) {
+    unsigned long long result = 0.0;
+    unsigned short *ptr = (unsigned short *) &result;
+    for (unsigned char i = 0; i < 4; ++i) {
         *ptr = *data;
         data++;
         ptr++;

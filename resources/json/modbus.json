@@ -314,7 +314,7 @@
         "PageType": 0,
         "Index": 9,
         "Address": 18,
-        "RegisterType": "System.Long",
+        "RegisterType": "System.ULong",
         "DataLength": 4,
         "RegisterName": "ir9"
     },
@@ -435,7 +435,7 @@
         "PageType": 0,
         "Index": 9,
         "Address": 18,
-        "RegisterType": "System.Long",
+        "RegisterType": "System.ULong",
         "DataLength": 4,
         "RegisterName": "hr9"
     },
