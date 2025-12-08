@@ -224,6 +224,12 @@ void ModbusServer::setRegister(QModbusDataUnit::RegisterType table, const QStrin
                     QVector<quint16> values(2, 0);
                     int_to_usa(invert_int_order(value), &values[0]);
                     _mdum[reg_name].setValues(values);
+                } else if ((size == 2) && (reg_type.toLower().contains("ushort"))) {
+                    QVector<quint16> values(1, value);
+                    _mdum[reg_name].setValues(values);
+                } else if ((size == 2) && (reg_type.toLower().contains("short"))) {
+                    QVector<quint16> values(1, value);
+                    _mdum[reg_name].setValues(values);
                 } else if (size == 1) {
                     QVector<quint16> values(1, value);
                     _mdum[reg_name].setValues(values);

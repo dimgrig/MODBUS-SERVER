@@ -226,7 +226,7 @@
         "PageType": 0,
         "Index": 1,
         "Address": 0,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.UShort",
         "DataLength": 1,
         "RegisterName": "ir1"
     },
@@ -237,7 +237,7 @@
         "PageType": 0,
         "Index": 2,
         "Address": 1,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Short",
         "DataLength": 1,
         "RegisterName": "ir2"
     },
@@ -259,7 +259,7 @@
         "PageType": 0,
         "Index": 4,
         "Address": 4,
-        "RegisterType": "System.UInt32",
+        "RegisterType": "System.Int32",
         "DataLength": 2,
         "RegisterName": "ir4"
     },
@@ -347,7 +347,7 @@
         "PageType": 0,
         "Index": 1,
         "Address": 0,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.UShort",
         "DataLength": 1,
         "RegisterName": "hr1"
     },
@@ -358,7 +358,7 @@
         "PageType": 0,
         "Index": 2,
         "Address": 1,
-        "RegisterType": "System.UInt16",
+        "RegisterType": "System.Short",
         "DataLength": 1,
         "RegisterName": "hr2"
     },
@@ -380,7 +380,7 @@
         "PageType": 0,
         "Index": 4,
         "Address": 4,
-        "RegisterType": "System.UInt32",
+        "RegisterType": "System.Int32",
         "DataLength": 2,
         "RegisterName": "hr4"
     },

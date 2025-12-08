@@ -348,6 +348,10 @@ void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
                     } else if ((mdu.valueCount() == 2) && (reg_type.toLower().contains("int"))) {
                         int v = usa_to_int(&mdu.values()[0]);
                         dsb->setValue(invert_int_order(v));
+                    } else if ((mdu.valueCount() == 1) && (reg_type.toLower().contains("ushort"))) {
+                        dsb->setValue(mdu.values()[0]);
+                    } else if ((mdu.valueCount() == 1) && (reg_type.toLower().contains("short"))) {
+                        dsb->setValue((unsigned short)mdu.values()[0]);
                     } else if (mdu.valueCount() == 1) {
                         dsb->setValue(mdu.values()[0]);
                     } else {
@@ -456,6 +460,18 @@ void create_dsb(QDoubleSpinBox* dsb, const QString &name, const QString &reg_typ
         dsb->setSingleStep(0.01);
         dsb->setMaximum(DBL_MAX);
         dsb->setMinimum(-DBL_MAX);
+    } else if (reg_type.toLower().contains("ushort")) {
+        //ushort
+        dsb->setDecimals(0);
+        dsb->setSingleStep(1);
+        dsb->setMaximum((double)USHRT_MAX);
+        dsb->setMinimum(0);
+    } else if (reg_type.toLower().contains("short")) {
+        //short
+        dsb->setDecimals(0);
+        dsb->setSingleStep(1);
+        dsb->setMaximum((double)SHRT_MAX);
+        dsb->setMinimum((double)-SHRT_MAX);
     } else if (reg_type.toLower().contains("uint")) {
         //uint
         dsb->setDecimals(0);
