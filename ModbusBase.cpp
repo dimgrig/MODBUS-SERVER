@@ -165,16 +165,21 @@ std::map<QString, QModbusDataUnit> ModbusBase::update_mdu(QModbusDataUnit::Regis
     return res;
 }
 
-void ModbusBase::on_read_json() {
-    QString filename = ":json/json/modbus.json";
-    //check file in app dir
-    QFileInfo check_file("modbus.json");
-    if (check_file.exists() && check_file.isFile()) {
-        filename = "modbus.json";
+void ModbusBase::on_read_json(QString config) {
+    QString filename;
+    if (config == "") {
+        filename = ":json/json/modbus.json";
+        //check file in app dir
+        QFileInfo check_file("modbus.json");
+        if (check_file.exists() && check_file.isFile()) {
+            filename = "modbus.json";
+        } else {
+            //else use from resources
+        }
     } else {
-        //else use from resources
+        filename = config;
     }
-    qCDebug(logDebug()) << "Modbus table config file" << filename;
+    //qCDebug(logDebug()) << "Modbus table config file" << filename;
 
     QScopedPointer<QFile> mapFile(new QFile(filename));
     mapFile.data()->open(QIODevice::ReadOnly);
@@ -186,6 +191,7 @@ void ModbusBase::on_read_json() {
     QJsonArray json_array = doc.array();
     //qCDebug(logDebug()) << doc.isArray() << json_array.size();
 
+    //std::map<std::string, std::string> map;
 //    QVariantMap dataMap = (((mainMap[(index + "_map").c_str()].toMap())["mappings"].toMap())[index.c_str()].toMap())["properties"].toMap();
 //    QVariantMap dataMap = mainMap;
 
@@ -248,15 +254,15 @@ void ModbusBase::on_read_json() {
 //        }
 //    }
 
-    qCDebug(logDebug()) << "--------- mdum" <<  this->_mdum.size() << "------------";
-    for (const auto &value : this->_mdum) {
-        QString reg_type;
-        if (_reg_type_m.count(value.first))  {
-            reg_type = _reg_type_m[value.first];
-        }
-        qCDebug(logDebug()) << "reg_name" << value.first << "startAddress" << value.second.startAddress() <<
-                               "valueCount" << value.second.valueCount() << "values" << value.second.values() << "reg_type" << reg_type;
-    }
+    // qCDebug(logDebug()) << "--------- mdum" <<  this->_mdum.size() << "------------";
+    // for (const auto &value : this->_mdum) {
+    //     QString reg_type;
+    //     if (_reg_type_m.count(value.first))  {
+    //         reg_type = _reg_type_m[value.first];
+    //     }
+    //     qCDebug(logDebug()) << "reg_name" << value.first << "startAddress" << value.second.startAddress() <<
+    //                            "valueCount" << value.second.valueCount() << "values" << value.second.values() << "reg_type" << reg_type;
+    // }
 }
 
 std::vector<std::pair<QString, QModbusDataUnit>> ModbusBase::get_sort_by_start_address_mdum_v() const {

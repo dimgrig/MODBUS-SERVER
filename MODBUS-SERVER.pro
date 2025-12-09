@@ -29,6 +29,7 @@ SOURCES += \
     Logger.cpp \
     MessageBox.cpp \
     ModbusBase.cpp \
+    ModbusClientSettings.cpp \
     ModbusServer.cpp \
     Profiler.cpp \
     Sleeper.cpp \
@@ -47,6 +48,7 @@ HEADERS += \
     Logger.h \
     MessageBox.h \
     ModbusBase.h \
+    ModbusClientSettings.h \
     ModbusServer.h \
     Profiler.h \
     Random.h \
@@ -69,6 +71,7 @@ FORMS += \
     uis/Users.ui \
     uis/about.ui \
     uis/mainwindow.ui \
+    uis/modbus_client.ui \
     uis/modbus_server.ui \
     uis/settings.ui
 

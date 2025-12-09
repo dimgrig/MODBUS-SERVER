@@ -86,7 +86,7 @@ MainWindow::MainWindow(QWidget *parent)
     this->read_config();
 
     //this->ui->modbus_settings_layout->addWidget(this->modbus_client, 3, 0, 2, 0);
-    this->ui->modbus_settings_layout->addWidget(this->modbus_server, 3, 0, 2, 0);
+    this->ui->modbus_settings_layout->addWidget(this->modbus_client_settings, 3, 0, 2, 0);
 
     if (cfg.PROXY) {
         QNetworkProxy proxy;
@@ -99,7 +99,8 @@ MainWindow::MainWindow(QWidget *parent)
         QNetworkProxy::setApplicationProxy(proxy);
     }
 
-    modbus_server->on_connect();
+    modbus_server->set_modbus_settings(this->modbus_client_settings->getSettingsFromUi());
+    modbus_server->connectToHost();
 
     this->modbus_ui();
 
@@ -174,6 +175,20 @@ void MainWindow::connect_signal_slot() {
 
     connect(this->random_timer, &QTimer::timeout, this, &MainWindow::on_random_timer);
     this->random_timer->start(1000);
+
+
+    connect(this->modbus_client_settings, &ModbusClientSettings::settings_changed, [this](){
+        modbus_server->disconnectFromHost();
+        modbus_server->set_modbus_settings(this->modbus_client_settings->getSettingsFromUi());
+        modbus_server->connectToHost();
+    });
+
+    connect(this->modbus_client_settings, &ModbusClientSettings::poll_timer_changed, [this](int value){
+        this->timer->stop();
+        this->timer->start(value);
+    });
+
+    connect(this->modbus_server, &ModbusServer::on_state_changed, this->modbus_client_settings, &ModbusClientSettings::onModbusStateChanged);
 }
 
 void MainWindow::read_config(){
@@ -181,7 +196,7 @@ void MainWindow::read_config(){
 
     //this->ui->sb_poll_timer->setValue(cfg.MODBUS_POLL_TIMER);
 
-    this->modbus_server->read_config();
+    this->modbus_client_settings->read_config();
 }
 
 void MainWindow::write_config(){
@@ -199,7 +214,7 @@ void MainWindow::write_config(){
     config.setValue("MODBUS_POLL_TIMER", cfg.MODBUS_POLL_TIMER);
     config.endGroup();
 
-    this->modbus_server->write_config();
+    this->modbus_client_settings->write_config();
 }
 
 void MainWindow::menu_bar() {

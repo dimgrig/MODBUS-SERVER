@@ -45,6 +45,7 @@
 #include "Profiler.h"
 
 #include "ModbusServer.h"
+#include "ModbusClientSettings.h"
 
 //using namespace std;
 
@@ -106,6 +107,7 @@ private:
     QTimer *random_timer = new QTimer(this);
 
     ModbusServer *modbus_server = new ModbusServer(this);
+    ModbusClientSettings *modbus_client_settings = new ModbusClientSettings(this);
 
     QTranslator qtLanguageTranslator;
 
