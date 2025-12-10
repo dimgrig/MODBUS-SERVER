@@ -128,42 +128,6 @@ public:
         return inst;
     }
 
-    //calibrator
-    bool CALIBRATOR = false;
-    QString CALIBRATOR_UART_PORT = "";
-    int CALIBRATOR_UART_SPEED = 115200;
-    int CALIBRATOR_TOLERANCE = 2;
-    bool DEBUG_MSG_CALIBRATOR = false;
-
-    //dirs
-    QString SELFTEST = "";
-    QString TEST_RESULT_DIR = "";
-    QString WORKSPACE_DIR = "";
-    QString XSD_DIR = "";
-
-    //ethernet
-    bool DEBUG_MSG_ETHERNET = false;
-    QString IP = "";
-    int PORT = 80;
-
-    //filter
-    double ADAPTIVE_AVERAGE_FAST = 1.0;
-    bool ADAPTIVE_AVERAGE_FILTER = false;
-    int ADAPTIVE_AVERAGE_GAP = 200;
-    double ADAPTIVE_AVERAGE_SLOW = 0.01;
-    int AVERAGE_FILTER = 0;
-    bool FILTER = false;
-    int MEDIAN_FILTER = 0;
-
-    //interface
-    InterfaceType INTERFACE_TYPE = InterfaceType_UART;
-    int MAX_RETRIES = 3;
-    int MAX_WAITS = 100;
-    int POLL_TIMER = 10;
-    int STATUS = 1;
-    int SYNC = 1;
-    int SYNC_TIMER = 100;
-
     //log
     std::string FILE = "";
     bool LOG = false;
@@ -175,33 +139,8 @@ public:
     bool PROFILER = false;
     bool UNITTEST = false;
 
-    //opi
-    int GROUP_AHEAD_DURATION = 5000;
-    bool GROUP_POLARITY = false;
-    int STOP_DURATION = 5000;
-
-    //meter
-    bool DEBUG_MSG = false;
-    bool PXI = false;
-    QString PXI_IP;
-    int PXI_PORT = 5025;
-
-    //parameters
-    int MODBUS_POLL_TIMER = 500;
-    int MODBUS_ADDRESS = 1;
-    QString MODBUS_TYPE = "TCP";
-    QString MODBUS_IP = "192.168.3.1";
-    int MODBUS_PORT = 502;
-    QString MODBUS_SERIAL_PORT = "COM1";
-    int MODBUS_BAUDRATE = 115200;
-    int MODBUS_DATA_BITS = 8;
-    int MODBUS_STOP_BITS = 1;
-    QString MODBUS_PARITY = "NoParity";
-
-    //proxy
-    bool PROXY = true;
-    QString PROXY_HOST = "192.168.1.7";
-    int PROXY_PORT = 3128;
+    //modbus
+    ModbusSettings MODBUS_SETTINGS;
 
     //system
     QString APPLICATION_NAME = "";
@@ -209,30 +148,6 @@ public:
     QString ORGANIZATION_NAME = "";    
     QString OS = "WIN";
     QString VERSION = "1.0.0";
-
-    //test
-    bool DEBUG_MSG_TEST = false;
-    bool IGNORE_LOCK = false;
-    bool INGORE_MODEL_TYPE = false;
-    bool LOCAL_SERVER = false;
-    int RESULT_REQUEST_TIMEOUT = 100;
-    bool RMO_diode_stm = false;
-    bool STM_READY_IMIT = false;
-    int TEST_RESULT_KEEP_DAYS = 90;
-
-    //uart
-    bool DEBUG_MSG_UART = false;
-    QString UART_PORT = "";
-    int UART_SPEED = 115200;
-
-    //user_settings
-    bool TEST_CALIBRATION_ADC = true;
-    bool TEST_CALIBRATION_DAC = true;
-    bool TEST_CALIBRATION_DURATION = true;
-    bool ENABLE_SHORTCUTS = false;
-    bool IGNORE_FAILED = false;
-    bool RESET_BATCH_NUMBERS = false;
-    bool SAVE_TEST_RESULTS = false;
 private:
     Config();
     Config(const Config&) = delete;

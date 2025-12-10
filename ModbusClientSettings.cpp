@@ -102,48 +102,27 @@ void ModbusClientSettings::setSettingsToUi(const ModbusSettings& settings) {
 }
 
 void ModbusClientSettings::read_config(){
-    //qCDebug(logDebug()) << "cfg.MODBUS_IP" << cfg.MODBUS_TYPE << cfg.MODBUS_IP << cfg.MODBUS_PORT;
-    this->ui->cb_connect_type->setCurrentText(cfg.MODBUS_TYPE);
-    this->ui->le_address->setText(QString::number(cfg.MODBUS_ADDRESS));
-    this->ui->le_ip->setText(cfg.MODBUS_IP);
-    this->ui->le_port->setText(QString::number(cfg.MODBUS_PORT));
-    this->ui->le_com_port->setText(cfg.MODBUS_SERIAL_PORT);
-    this->ui->cb_baudrate->setCurrentText(ModbusBaudRate_to_text(cfg.MODBUS_BAUDRATE));
-    this->ui->cb_data_bits->setCurrentText(ModbusDataBits_to_text(cfg.MODBUS_DATA_BITS));
-    this->ui->cb_stop_bits->setCurrentText(ModbusStopBits_to_text(cfg.MODBUS_STOP_BITS));
-    this->ui->cb_parity->setCurrentText(cfg.MODBUS_PARITY);
-    this->ui->sb_poll_timer->setValue(cfg.MODBUS_POLL_TIMER);
-
-    //this->on_connect_type(this->ui->cb_connect_type->currentIndex());
+    this->setSettingsToUi(cfg.MODBUS_SETTINGS);
 }
 
 void ModbusClientSettings::write_config(){
-    cfg.MODBUS_TYPE = this->ui->cb_connect_type->currentText();
-    cfg.MODBUS_ADDRESS = this->ui->le_address->text().toInt();
-    cfg.MODBUS_IP = this->ui->le_ip->text();
-    cfg.MODBUS_PORT = this->ui->le_port->text().toInt();
-    cfg.MODBUS_SERIAL_PORT = this->ui->le_com_port->text();
-    cfg.MODBUS_BAUDRATE = ModbusBaudRate_from_text(this->ui->cb_baudrate->currentText().toStdString().c_str());
-    cfg.MODBUS_DATA_BITS = ModbusDataBits_from_text(this->ui->cb_data_bits->currentText().toStdString().c_str());
-    cfg.MODBUS_STOP_BITS = ModbusStopBits_from_text(this->ui->cb_stop_bits->currentText().toStdString().c_str());
-    cfg.MODBUS_PARITY = this->ui->cb_parity->currentText();
-    cfg.MODBUS_POLL_TIMER = this->ui->sb_poll_timer->value();
+    cfg.MODBUS_SETTINGS = this->getSettingsFromUi();
 
     QSettings config("config.ini", QSettings::IniFormat);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     config.setIniCodec("UTF-8"); //Windows-1251
 #endif
 
-    config.beginGroup("parameters");
-    config.setValue("MODBUS_TYPE", cfg.MODBUS_TYPE);
-    config.setValue("MODBUS_ADDRESS", cfg.MODBUS_ADDRESS);
-    config.setValue("MODBUS_IP", cfg.MODBUS_IP);
-    config.setValue("MODBUS_PORT", cfg.MODBUS_PORT);
-    config.setValue("MODBUS_SERIAL_PORT", cfg.MODBUS_SERIAL_PORT);
-    config.setValue("MODBUS_BAUDRATE", cfg.MODBUS_BAUDRATE);
-    config.setValue("MODBUS_DATA_BITS", cfg.MODBUS_DATA_BITS);
-    config.setValue("MODBUS_STOP_BITS", cfg.MODBUS_STOP_BITS);
-    config.setValue("MODBUS_PARITY", cfg.MODBUS_PARITY);
-    config.setValue("MODBUS_POLL_TIMER", cfg.MODBUS_POLL_TIMER);
+    config.beginGroup("modbus");
+    config.setValue("MODBUS_POLL_TIMER", cfg.MODBUS_SETTINGS.MODBUS_POLL_TIMER);
+    config.setValue("MODBUS_ADDRESS", cfg.MODBUS_SETTINGS.MODBUS_ADDRESS);
+    config.setValue("MODBUS_TYPE", cfg.MODBUS_SETTINGS.MODBUS_TYPE);
+    config.setValue("MODBUS_IP", cfg.MODBUS_SETTINGS.MODBUS_IP);
+    config.setValue("MODBUS_PORT", cfg.MODBUS_SETTINGS.MODBUS_PORT);
+    config.setValue("MODBUS_SERIAL_PORT", cfg.MODBUS_SETTINGS.MODBUS_SERIAL_PORT);
+    config.setValue("MODBUS_BAUDRATE", cfg.MODBUS_SETTINGS.MODBUS_BAUDRATE);
+    config.setValue("MODBUS_DATA_BITS", cfg.MODBUS_SETTINGS.MODBUS_DATA_BITS);
+    config.setValue("MODBUS_STOP_BITS", cfg.MODBUS_SETTINGS.MODBUS_STOP_BITS);
+    config.setValue("MODBUS_PARITY", cfg.MODBUS_SETTINGS.MODBUS_PARITY);
     config.endGroup();
 }

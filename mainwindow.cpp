@@ -88,16 +88,16 @@ MainWindow::MainWindow(QWidget *parent)
     //this->ui->modbus_settings_layout->addWidget(this->modbus_client, 3, 0, 2, 0);
     this->ui->modbus_settings_layout->addWidget(this->modbus_client_settings, 3, 0, 2, 0);
 
-    if (cfg.PROXY) {
-        QNetworkProxy proxy;
-        proxy.setType(QNetworkProxy::DefaultProxy);
-        proxy.setHostName(cfg.PROXY_HOST); //"192.168.7.1"
-        proxy.setPort(cfg.PROXY_PORT); //3128
-        //proxy.setUser("username");
-        //proxy.setPassword("password");
+    // if (cfg.PROXY) {
+    //     QNetworkProxy proxy;
+    //     proxy.setType(QNetworkProxy::DefaultProxy);
+    //     proxy.setHostName(cfg.PROXY_HOST); //"192.168.7.1"
+    //     proxy.setPort(cfg.PROXY_PORT); //3128
+    //     //proxy.setUser("username");
+    //     //proxy.setPassword("password");
 
-        QNetworkProxy::setApplicationProxy(proxy);
-    }
+    //     QNetworkProxy::setApplicationProxy(proxy);
+    // }
 
     modbus_server->set_modbus_settings(this->modbus_client_settings->getSettingsFromUi());
     modbus_server->connectToHost();
@@ -204,15 +204,15 @@ void MainWindow::write_config(){
 
     //cfg.MODBUS_POLL_TIMER = this->ui->sb_poll_timer->value();
 
-    QSettings config("config.ini", QSettings::IniFormat);
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    config.setIniCodec("UTF-8"); //Windows-1251
-#endif
+//     QSettings config("config.ini", QSettings::IniFormat);
+// #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+//     config.setIniCodec("UTF-8"); //Windows-1251
+// #endif
 
-    config.beginGroup("parameters");
+    // config.beginGroup("parameters");
 
-    config.setValue("MODBUS_POLL_TIMER", cfg.MODBUS_POLL_TIMER);
-    config.endGroup();
+    // config.setValue("MODBUS_POLL_TIMER", cfg.MODBUS_POLL_TIMER);
+    // config.endGroup();
 
     this->modbus_client_settings->write_config();
 }
