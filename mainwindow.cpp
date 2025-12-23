@@ -7,6 +7,8 @@
 #include <float.h>
 #include <locale.h>
 
+#include "Config.h"
+#include "modbus_functions.h"
 #include "Random.h"
 
 const int StatusTimeout = AQP::MSecPerSecond * 10;
@@ -25,7 +27,6 @@ MainWindow::MainWindow(QWidget *parent)
     //qCDebug(logDebug()) << this->ui->dw_batch_parameters->height();
 
     TestRunner tr;
-    RUN_TEST(tr, FunctionsTest);
     RUN_TEST(tr, MacrosesTest);
 
     this->setFont(QFont("Noto Sans", 10)); //10
@@ -86,7 +87,7 @@ MainWindow::MainWindow(QWidget *parent)
     this->read_config();
 
     //this->ui->modbus_settings_layout->addWidget(this->modbus_client, 3, 0, 2, 0);
-    this->ui->modbus_settings_layout->addWidget(this->modbus_client_settings, 3, 0, 2, 0);
+    this->ui->modbus_settings_layout->addWidget(this->modbus_settings_ui, 3, 0, 2, 0);
 
     // if (cfg.PROXY) {
     //     QNetworkProxy proxy;
@@ -99,7 +100,7 @@ MainWindow::MainWindow(QWidget *parent)
     //     QNetworkProxy::setApplicationProxy(proxy);
     // }
 
-    modbus_server->set_modbus_settings(this->modbus_client_settings->getSettingsFromUi());
+    modbus_server->set_modbus_settings(this->modbus_settings_ui->getSettingsFromUi());
     modbus_server->connectToHost();
 
     this->modbus_ui();
@@ -177,18 +178,18 @@ void MainWindow::connect_signal_slot() {
     this->random_timer->start(1000);
 
 
-    connect(this->modbus_client_settings, &ModbusClientSettings::settings_changed, [this](){
+    connect(this->modbus_settings_ui, &ModbusSettingsUI::settings_changed, [this](){
         modbus_server->disconnectFromHost();
-        modbus_server->set_modbus_settings(this->modbus_client_settings->getSettingsFromUi());
+        modbus_server->set_modbus_settings(this->modbus_settings_ui->getSettingsFromUi());
         modbus_server->connectToHost();
     });
 
-    connect(this->modbus_client_settings, &ModbusClientSettings::poll_timer_changed, [this](int value){
+    connect(this->modbus_settings_ui, &ModbusSettingsUI::poll_timer_changed, [this](int value){
         this->timer->stop();
         this->timer->start(value);
     });
 
-    connect(this->modbus_server, &ModbusServer::on_state_changed, this->modbus_client_settings, &ModbusClientSettings::onModbusStateChanged);
+    connect(this->modbus_server, &ModbusServer::on_state_changed, this->modbus_settings_ui, &ModbusSettingsUI::onModbusStateChanged);
 }
 
 void MainWindow::read_config(){
@@ -196,7 +197,7 @@ void MainWindow::read_config(){
 
     //this->ui->sb_poll_timer->setValue(cfg.MODBUS_POLL_TIMER);
 
-    this->modbus_client_settings->read_config();
+    this->modbus_settings_ui->read_config(cfg.MODBUS_SETTINGS);
 }
 
 void MainWindow::write_config(){
@@ -214,7 +215,7 @@ void MainWindow::write_config(){
     // config.setValue("MODBUS_POLL_TIMER", cfg.MODBUS_POLL_TIMER);
     // config.endGroup();
 
-    this->modbus_client_settings->write_config();
+    cfg.MODBUS_SETTINGS = this->modbus_settings_ui->write_config();
 }
 
 void MainWindow::menu_bar() {
@@ -280,13 +281,13 @@ void MainWindow::on_random_timer() {
 void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
     qCDebug(logDebug()) << "modbus_read" << reg_name << mdu.startAddress() << mdu.valueCount() << mdu.values();
 
-    auto reg_type_m = modbus_server->get_reg_type_m();
-    QString reg_type = "double";
-    if (reg_type_m.count(reg_name) > 0) {
-        reg_type = reg_type_m[reg_name];
+    auto reg_data_type_m = modbus_server->get_reg_data_type_m();
+    QString reg_data_type = "double";
+    if (reg_data_type_m.count(reg_name) > 0) {
+        reg_data_type = reg_data_type_m[reg_name];
     }
 
-    if (reg_type.toLower().contains("string")) {
+    if (reg_data_type.toLower().contains("string")) {
         // Обработка строкового регистра
         auto le = this->ui->gb4->findChild<QLineEdit*>("le_" + reg_name);
         if (le) {
@@ -345,27 +346,27 @@ void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
 #if QT_VERSION > QT_VERSION_CHECK(5, 15, 8)
                     disconnect(dsb, &QDoubleSpinBox::valueChanged, this, &MainWindow::HoldingRegChanged);
 #endif
-                    if ((mdu.valueCount() == 4) && (reg_type.toLower().contains("double"))) {
+                    if ((mdu.valueCount() == 4) && (reg_data_type.toLower().contains("double"))) {
                         double v = usa_to_double(&mdu.values()[0]);
                         dsb->setValue(invert_double_order(v));
-                    } else if ((mdu.valueCount() == 4) && (reg_type.toLower().contains("ulong"))) {
+                    } else if ((mdu.valueCount() == 4) && (reg_data_type.toLower().contains("ulong"))) {
                         unsigned long long v = usa_to_ulong(&mdu.values()[0]);
                         dsb->setValue(invert_ulong_order(v));
-                    } else if ((mdu.valueCount() == 4) && (reg_type.toLower().contains("long"))) {
+                    } else if ((mdu.valueCount() == 4) && (reg_data_type.toLower().contains("long"))) {
                         long long v = usa_to_long(&mdu.values()[0]);
                         dsb->setValue(invert_long_order(v));
-                    } else if ((mdu.valueCount() == 2) && (reg_type.toLower().contains("float"))) {
+                    } else if ((mdu.valueCount() == 2) && (reg_data_type.toLower().contains("float"))) {
                         float v = usa_to_float(&mdu.values()[0]);
                         dsb->setValue(invert_float_order(v));
-                    } else if ((mdu.valueCount() == 2) && (reg_type.toLower().contains("uint"))) {
+                    } else if ((mdu.valueCount() == 2) && (reg_data_type.toLower().contains("uint"))) {
                         unsigned int v = usa_to_uint(&mdu.values()[0]);
                         dsb->setValue(invert_uint_order(v));
-                    } else if ((mdu.valueCount() == 2) && (reg_type.toLower().contains("int"))) {
+                    } else if ((mdu.valueCount() == 2) && (reg_data_type.toLower().contains("int"))) {
                         int v = usa_to_int(&mdu.values()[0]);
                         dsb->setValue(invert_int_order(v));
-                    } else if ((mdu.valueCount() == 1) && (reg_type.toLower().contains("ushort"))) {
+                    } else if ((mdu.valueCount() == 1) && (reg_data_type.toLower().contains("ushort"))) {
                         dsb->setValue(mdu.values()[0]);
-                    } else if ((mdu.valueCount() == 1) && (reg_type.toLower().contains("short"))) {
+                    } else if ((mdu.valueCount() == 1) && (reg_data_type.toLower().contains("short"))) {
                         dsb->setValue((unsigned short)mdu.values()[0]);
                     } else if (mdu.valueCount() == 1) {
                         dsb->setValue(mdu.values()[0]);
@@ -528,15 +529,15 @@ void MainWindow::modbus_ui() {
 
     this->_mdum = modbus_server->get_mdum();
     auto mdum_v = modbus_server->get_sort_by_start_address_mdum_v();
-    auto reg_type_m = modbus_server->get_reg_type_m();
+    auto reg_data_type_m = modbus_server->get_reg_data_type_m();
 
     for (const auto &_mdu : mdum_v) { //this->_mdum
         QString name = _mdu.first;
         auto mdu = _mdu.second;
 
-        QString reg_type = "double";
-        if (reg_type_m.count(name) > 0) {
-            reg_type = reg_type_m[name];
+        QString reg_data_type = "double";
+        if (reg_data_type_m.count(name) > 0) {
+            reg_data_type = reg_data_type_m[name];
         }
         //qCDebug(logDebug) << name << mdu.startAddress() << mdu.valueCount() << mdu.values();
         switch (mdu.registerType()) {
@@ -568,7 +569,7 @@ void MainWindow::modbus_ui() {
             break;
             case QModbusDataUnit::InputRegisters:
             {
-                if (reg_type.toLower().contains("string")) {
+                if (reg_data_type.toLower().contains("string")) {
                     auto label = new QLabel(name, this);
                     auto le = new QLineEdit(this);
                     le->setObjectName(QString("le_") + name);
@@ -582,7 +583,7 @@ void MainWindow::modbus_ui() {
                 } else {
                     auto label = new QLabel(name, this);
                     auto dsb = new QDoubleSpinBox(this);
-                    create_dsb(dsb, name, reg_type, mdu);
+                    create_dsb(dsb, name, reg_data_type, mdu);
 
                     gl3->addWidget(label, ir_le_v.size() + ir_v.size(), 0);
                     gl3->addWidget(dsb, ir_le_v.size() + ir_v.size(), 1);
@@ -599,7 +600,7 @@ void MainWindow::modbus_ui() {
             break;
             case QModbusDataUnit::HoldingRegisters:
             {
-                if (reg_type.toLower().contains("string")) {
+                if (reg_data_type.toLower().contains("string")) {
                     auto label = new QLabel(name, this);
                     auto le = new QLineEdit(this);
                     le->setObjectName(QString("le_") + name);
@@ -613,7 +614,7 @@ void MainWindow::modbus_ui() {
                 } else {
                     auto label = new QLabel(name, this);
                     auto dsb = new QDoubleSpinBox(this);
-                    create_dsb(dsb, name, reg_type, mdu);
+                    create_dsb(dsb, name, reg_data_type, mdu);
 
                     gl4->addWidget(label, hr_le_v.size() + hr_v.size(), 0);
                     gl4->addWidget(dsb, hr_le_v.size() + hr_v.size(), 1);

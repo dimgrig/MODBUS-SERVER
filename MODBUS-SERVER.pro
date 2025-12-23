@@ -22,58 +22,41 @@ include(qmake-destination-path.pri)
 DEFINES += NOCRYPT #fix DOMDocument ambigious with qcustomplot
 DEFINES += NOUSER
 
-message(VERSION: $${RMO_TYPE})
+unix {
+    LIBS += -L/usr/lib/qt/ -lcore-lib
+    LIBS += -L/usr/lib/qt/ -lmodbus-core-lib
+}
+
+win32 {
+    DEFINES += win32
+    LIBS += -L$${WIN_LIBS_PATH} -lcore-lib
+    LIBS += -L$${WIN_LIBS_PATH} -lmodbus-core-lib
+}
+win64 {
+    LIBS += -L$${WIN_LIBS_PATH} -lcore-lib
+    LIBS += -L$${WIN_LIBS_PATH} -lmodbus-core-lib
+}
+
+INCLUDEPATH += "$$_PRO_FILE_PWD_/"
+INCLUDEPATH += "$$_PRO_FILE_PWD_/../Core"
+INCLUDEPATH += "$$_PRO_FILE_PWD_/../ModbusCore"
 
 SOURCES += \
     Config.cpp \
-    Logger.cpp \
     MessageBox.cpp \
-    ModbusBase.cpp \
-    ModbusClientSettings.cpp \
-    ModbusServer.cpp \
-    Profiler.cpp \
-    Sleeper.cpp \
-    TestRunner.cpp \
     aqp.cpp \
-    enum_macro.cpp \
-    functions.cpp \
-    macroses.cpp \
     main.cpp \
-    mainwindow.cpp \
-    templates.cpp \
-    templates_cout.cpp
+    mainwindow.cpp
 
 HEADERS += \
     Config.h \
-    Logger.h \
-    MessageBox.h \
-    ModbusBase.h \
-    ModbusClientSettings.h \
-    ModbusServer.h \
-    Profiler.h \
     Random.h \
-    Sleeper.h \
-    TestRunner.h \
     aqp.h \
-    enum_macro.h \
-    functions.h \
     icons.h \
-    interfaces.h \
-    macroses.h \
-    mainwindow.h \
-    templates.h \
-    templates_cout.h
-
+    mainwindow.h
 
 FORMS += \
-    uis/Auth.ui \
-    uis/User.ui \
-    uis/Users.ui \
-    uis/about.ui \
-    uis/mainwindow.ui \
-    uis/modbus_client.ui \
-    uis/modbus_server.ui \
-    uis/settings.ui
+    uis/mainwindow.ui
 
 RESOURCES += \
     resources/resources.qrc
