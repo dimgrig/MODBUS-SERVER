@@ -6,7 +6,7 @@
         "PageType": 0,
         "Index": 1,
         "Address": 1,
-        "RegisterDataType": "Float",
+        "RegisterDataType": "UInt32",
         "DataLength": 2,
         "RegisterName": "К1 метка времени"
     },
@@ -61,7 +61,7 @@
         "PageType": 0,
         "Index": 6,
         "Address": 11,
-        "RegisterDataType": "Float",
+        "RegisterDataType": "UInt32",
         "DataLength": 2,
         "RegisterName": "К2 метка времени"
     },
