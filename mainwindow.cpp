@@ -18,6 +18,24 @@ const int StatusTimeout = AQP::MSecPerSecond * 10;
 
 #define SINGLESHOT_TIMER    100
 
+void create_gb(QGridLayout *gl, QGroupBox *gb) {
+    QGroupBox* gbi = new QGroupBox;
+    //QGridLayout *li = new QGridLayout; //gl
+    //QGroupBox *gbo = new QGroupBox; //gb
+    QVBoxLayout *lo = new QVBoxLayout;
+    QScrollArea* sa = new QScrollArea();
+
+    gbi->setLayout(gl);
+    sa->setWidget(gbi);
+    sa->setWidgetResizable(true);
+    lo->addWidget(sa);
+    gb->setLayout(lo);
+
+    sa->setWidgetResizable(true);
+    sa->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    sa->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+}
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -50,6 +68,18 @@ MainWindow::MainWindow(QWidget *parent)
 //    setlocale(LC_ALL, "ru_RU");
 //    //std::locale::global(std::locale(std::locale("ru_RU"), "C", std::locale::numeric));
     //qCDebug(logDebug()) << std::locale().name() << locale.name();
+
+    // Создаем новые layout'ы
+    gl1 = new QGridLayout();
+    gl2 = new QGridLayout();
+    gl3 = new QGridLayout();
+    gl4 = new QGridLayout();
+
+    // Создаем структуру с прокруткой
+    create_gb(gl1, this->ui->gb1);
+    create_gb(gl2, this->ui->gb2);
+    create_gb(gl3, this->ui->gb3);
+    create_gb(gl4, this->ui->gb4);
 
     this->setAttribute(Qt::WA_AlwaysShowToolTips);
 
@@ -102,6 +132,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     modbus_server->set_modbus_settings(this->modbus_settings_ui->getSettingsFromUi());
     modbus_server->connectToHost();
+    modbus_settings_ui->set_config(modbus_server->get_config());
 
     this->modbus_ui();
 
@@ -195,6 +226,21 @@ void MainWindow::connect_signal_slot() {
     });
 
     connect(this->modbus_server, &ModbusServer::on_state_changed, this->modbus_settings_ui, &ModbusSettingsUI::onModbusStateChanged);
+
+    this->modbus_settings_ui->set_reconfig(true);
+    connect(this->modbus_settings_ui, &ModbusSettingsUI::config_changed, [this](QString path){
+        bool connected = modbus_server->isConnected();
+        if (connected) {
+            modbus_server->disconnectFromHost();
+        }
+        modbus_server->set_modbus_config(path);
+        if (connected) {
+            modbus_server->connectToHost();
+        }
+
+        this->modbus_ui();
+    });
+    connect(this->modbus_server, &ModbusServer::config_changed, this->modbus_settings_ui, &ModbusSettingsUI::set_config);
 }
 
 void MainWindow::read_config(){
@@ -454,24 +500,6 @@ void MainWindow::StringHoldingRegistersChanged(const QString &value) {
     }
 }
 
-void create_gb(QGridLayout *gl, QGroupBox *gb) {
-    QGroupBox* gbi = new QGroupBox;
-    //QGridLayout *li = new QGridLayout; //gl
-    //QGroupBox *gbo = new QGroupBox; //gb
-    QVBoxLayout *lo = new QVBoxLayout;
-    QScrollArea* sa = new QScrollArea();
-
-    gbi->setLayout(gl);
-    sa->setWidget(gbi);
-    sa->setWidgetResizable(true);
-    lo->addWidget(sa);
-    gb->setLayout(lo);
-
-    sa->setWidgetResizable(true);
-    sa->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    sa->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-}
-
 void create_dsb(QDoubleSpinBox* dsb, const QString &name, const QString &reg_type, const QModbusDataUnit &mdu) {
     dsb->setObjectName(QString("dsb_") + name);
     dsb->setMinimumSize({50, 20});
@@ -523,14 +551,8 @@ void create_dsb(QDoubleSpinBox* dsb, const QString &name, const QString &reg_typ
 }
 
 void MainWindow::modbus_ui() {
-    QGridLayout *gl1 = new QGridLayout(this);
-    QGridLayout *gl2 = new QGridLayout(this);
-    QGridLayout *gl3 = new QGridLayout(this);
-    QGridLayout *gl4 = new QGridLayout(this);
-    create_gb(gl1, this->ui->gb1);
-    create_gb(gl2, this->ui->gb2);
-    create_gb(gl3, this->ui->gb3);
-    create_gb(gl4, this->ui->gb4);
+    // Очищаем старый UI
+    clear_modbus_ui();
 
     this->_mdum = modbus_server->get_mdum();
     auto mdum_v = modbus_server->get_sort_by_start_address_mdum_v();
@@ -673,17 +695,114 @@ void MainWindow::modbus_ui() {
             emit le->textChanged(le->text());
         }
     }
+}
 
-//    for (auto &cb : di_v) {
-//        emit cb->clicked(cb->checkState());
-//    }
-//    for (auto &cb : coil_v) {
-//        emit cb->clicked(cb->checkState());
-//    }
-//    for (auto &dsb : ir_v) {
-//        emit dsb->valueChanged(dsb->value());
-//    }
-//    for (auto &dsb : hr_v) {
-//        emit dsb->valueChanged(dsb->value());
-//    }
+void MainWindow::clear_modbus_ui() {
+    for (auto &cb : di_v) {
+        if (cb) {
+            disconnect(cb, &QCheckBox::clicked, this, &MainWindow::DiscreteInputsChanged);
+        }
+    }
+
+    for (auto &cb : coil_v) {
+        if (cb) {
+            disconnect(cb, &QCheckBox::clicked, this, &MainWindow::CoilsChanged);
+        }
+    }
+
+    for (auto &dsb : ir_v) {
+        if (dsb) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+            disconnect(dsb, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                       this, &MainWindow::InputRegistersChanged);
+#else
+            disconnect(dsb, &QDoubleSpinBox::valueChanged,
+                       this, &MainWindow::HoldingRegistersChanged);
+#endif
+        }
+    }
+
+    for (auto &dsb : hr_v) {
+        if (dsb) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+            disconnect(dsb, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                       this, &MainWindow::HoldingRegistersChanged);
+#else
+            disconnect(dsb, &QDoubleSpinBox::valueChanged,
+                       this, &MainWindow::HoldingRegistersChanged);
+#endif
+        }
+    }
+
+    for (auto &le : hr_le_v) {
+        if (le) {
+            disconnect(le, &QLineEdit::textChanged, this, &MainWindow::StringHoldingRegistersChanged);
+        }
+    }
+
+    for (auto &le : ir_le_v) {
+        if (le) {
+            disconnect(le, &QLineEdit::textChanged, this, &MainWindow::StringInputRegistersChanged);
+        }
+    }
+
+    // 2. Удаляем layout'ы и их содержимое
+    if (gl1) {
+        QLayoutItem *item;
+        while ((item = gl1->takeAt(0)) != nullptr) {
+            if (item->widget()) {
+                delete item->widget();
+            }
+            delete item;
+        }
+        //delete gl1;
+        //gl1 = nullptr;
+    }
+
+    if (gl2) {
+        QLayoutItem *item;
+        while ((item = gl2->takeAt(0)) != nullptr) {
+            if (item->widget()) {
+                delete item->widget();
+            }
+            delete item;
+        }
+        //delete gl2;
+        //gl2 = nullptr;
+    }
+
+    if (gl3) {
+        QLayoutItem *item;
+        while ((item = gl3->takeAt(0)) != nullptr) {
+            if (item->widget()) {
+                delete item->widget();
+            }
+            delete item;
+        }
+        //delete gl3;
+        //gl3 = nullptr;
+    }
+
+    if (gl4) {
+        QLayoutItem *item;
+        while ((item = gl4->takeAt(0)) != nullptr) {
+            if (item->widget()) {
+                delete item->widget();
+            }
+            delete item;
+        }
+        //delete gl4;
+        //gl4 = nullptr;
+    }
+
+    // 3. Очищаем векторы указателей
+    di_v.clear();
+    coil_v.clear();
+    ir_v.clear();
+    hr_v.clear();
+    ir_le_v.clear();
+    hr_le_v.clear();
+
+    // 4. Очищаем внутреннюю структуру данных
+    _mdum.clear();
 }
