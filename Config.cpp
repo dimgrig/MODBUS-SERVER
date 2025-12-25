@@ -55,6 +55,8 @@ Config::Config() {
             MODBUS_SETTINGS.MODBUS_STOP_BITS = config.value("MODBUS_STOP_BITS", 1).toInt();
         if (config.contains(QString("MODBUS_PARITY")))
             MODBUS_SETTINGS.MODBUS_PARITY = config.value("MODBUS_PARITY", "NoParity").toString();
+        if (config.contains(QString("MODBUS_FORMAT")))
+            MODBUS_SETTINGS.MODBUS_FORMAT = config.value("MODBUS_FORMAT", "ABCD").toString();
         config.endGroup();
 
         config.beginGroup("system");
