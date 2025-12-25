@@ -22,6 +22,8 @@ include(qmake-destination-path.pri)
 DEFINES += NOCRYPT #fix DOMDocument ambigious with qcustomplot
 DEFINES += NOUSER
 
+QMAKE_LFLAGS += -Wl,-rpath,'/usr/lib/qt'
+
 unix {
     LIBS += -L/usr/lib/qt/ -lcore-lib
     LIBS += -L/usr/lib/qt/ -lmodbus-core-lib
