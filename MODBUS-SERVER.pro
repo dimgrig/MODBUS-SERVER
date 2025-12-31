@@ -24,19 +24,30 @@ DEFINES += NOUSER
 
 QMAKE_LFLAGS += -Wl,-rpath,'/usr/lib/qt'
 
-unix {
+exists(/etc/astra_version) {
     LIBS += -L/usr/lib/qt/ -lcore-lib
     LIBS += -L/usr/lib/qt/ -lmodbus-core-lib
-}
 
-win32 {
-    DEFINES += win32
-    LIBS += -L$${WIN_LIBS_PATH} -lcore-lib
-    LIBS += -L$${WIN_LIBS_PATH} -lmodbus-core-lib
-}
-win64 {
-    LIBS += -L$${WIN_LIBS_PATH} -lcore-lib
-    LIBS += -L$${WIN_LIBS_PATH} -lmodbus-core-lib
+    DISTFILES += core-gcc10.pri
+    include(core-gcc10.pri)
+
+    message($${ASTRA_GCC_PATH})
+    message($${ASTRA_QT_PATH})
+} else {
+    unix {
+        LIBS += -L/usr/lib/qt/ -lcore-lib
+        LIBS += -L/usr/lib/qt/ -lmodbus-core-lib
+    }
+
+    win32 {
+        DEFINES += win32
+        LIBS += -L$${WIN_LIBS_PATH} -lcore-lib
+        LIBS += -L$${WIN_LIBS_PATH} -lmodbus-core-lib
+    }
+    win64 {
+        LIBS += -L$${WIN_LIBS_PATH} -lcore-lib
+        LIBS += -L$${WIN_LIBS_PATH} -lmodbus-core-lib
+    }
 }
 
 INCLUDEPATH += "$$_PRO_FILE_PWD_/"

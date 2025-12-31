@@ -35,11 +35,14 @@ static QHash<QString, QSet<QString> > formatForMimeType;
 
 void readMimeTypeData(const QString &filename)
 {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    QRegExp whitespace("\\s+");
-#endif
+#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+    //TODO
+#else
 #if QT_VERSION > QT_VERSION_CHECK(5, 15, 8)
     QRegularExpression whitespace("\\s+");
+#else
+    QRegExp whitespace("\\s+");
+#endif
 #endif
     QFile file(filename);
     if (file.open(QIODevice::ReadOnly|QIODevice::Text)) {
@@ -49,13 +52,16 @@ void readMimeTypeData(const QString &filename)
             QStringList parts = line.split(whitespace);
             if (parts.isEmpty())
                 continue;
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-                QSet<QString> suffixes = QSet<QString>::fromList(parts.mid(1));
-#endif
-#if QT_VERSION > QT_VERSION_CHECK(5, 15, 8)
-                QSet<QString> suffixes = QListToQSet(parts.mid(1));
-#endif
 
+#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+                //TODO
+#else
+    #if QT_VERSION > QT_VERSION_CHECK(5, 15, 8)
+                QSet<QString> suffixes = QListToQSet(parts.mid(1));
+    #else
+                QSet<QString> suffixes = QSet<QString>::fromList(parts.mid(1));
+    #endif
+#endif
             formatForMimeType[parts.at(0)].unite(suffixes);
         }
     }
@@ -257,12 +263,16 @@ QString filenameFilter(const QString &name,
     QSet<QString> formats;
     foreach (const QString &mimeType, mimeTypes)
         formats.unite(formatForMimeType.value(mimeType));
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    QStringList fileFormatList = QList<QString>::fromSet(formats);
+#if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
+        //TODO
+#else
+    #if QT_VERSION > QT_VERSION_CHECK(5, 15, 8)
+        QStringList fileFormatList = QSetToQStringList(formats);
+    #else
+        QStringList fileFormatList = QList<QString>::fromSet(formats);
+    #endif
 #endif
-#if QT_VERSION > QT_VERSION_CHECK(5, 15, 8)
-    QStringList fileFormatList = QSetToQStringList(formats);
-#endif
+
     if (fileFormatList.isEmpty())
         fileFormatList << "*";
     else
