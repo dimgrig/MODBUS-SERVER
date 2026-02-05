@@ -420,9 +420,11 @@ void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
                         int v = usa_to_int(&mdu.values()[0], this->modbus_server->modbus_format());
                         dsb->setValue(v);
                     } else if ((mdu.valueCount() == 1) && (reg_data_type.toLower().contains("ushort"))) {
-                        dsb->setValue(mdu.values()[0]);
+                        unsigned short v = mdu.values()[0];
+                        dsb->setValue(v);
                     } else if ((mdu.valueCount() == 1) && (reg_data_type.toLower().contains("short"))) {
-                        dsb->setValue((unsigned short)mdu.values()[0]);
+                        short v = (short)mdu.values()[0];
+                        dsb->setValue(v);
                     } else if (mdu.valueCount() == 1) {
                         dsb->setValue(mdu.values()[0]);
                     } else {
