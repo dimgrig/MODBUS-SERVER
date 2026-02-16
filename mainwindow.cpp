@@ -455,7 +455,7 @@ void MainWindow::DiscreteInputsChanged(bool value) {
         QString reg_name = sender->objectName();
         reg_name = reg_name.remove("cb_");
         //qCDebug(logDebug()) << reg_name << value;
-        this->modbus_server->setRegister(QModbusDataUnit::DiscreteInputs, reg_name, value);
+        this->modbus_server->setRegister(reg_name, value);
     }
 }
 
@@ -465,7 +465,7 @@ void MainWindow::CoilsChanged(bool value) {
         QString reg_name = sender->objectName();
         reg_name = reg_name.remove("cb_");
         //qCDebug(logDebug()) << reg_name << value;
-        this->modbus_server->setRegister(QModbusDataUnit::Coils, reg_name, value);
+        this->modbus_server->setRegister(reg_name, value);
     }
 }
 
@@ -475,7 +475,7 @@ void MainWindow::InputRegistersChanged(double value) {
         QString reg_name = sender->objectName();
         reg_name = reg_name.remove("dsb_");
         //qCDebug(logDebug()) << reg_name << value;
-        this->modbus_server->setRegister(QModbusDataUnit::InputRegisters, reg_name, value);
+        this->modbus_server->setRegister(reg_name, value);
     }
 }
 
@@ -485,7 +485,7 @@ void MainWindow::HoldingRegistersChanged(double value) {
         QString reg_name = sender->objectName();
         reg_name = reg_name.remove("dsb_");
         //qCDebug(logDebug()) << reg_name << value;
-        this->modbus_server->setRegister(QModbusDataUnit::HoldingRegisters, reg_name, value);
+        this->modbus_server->setRegister(reg_name, value);
     }
 }
 
@@ -495,7 +495,7 @@ void MainWindow::StringInputRegistersChanged(const QString &value) {
         QString reg_name = sender->objectName();
         reg_name = reg_name.remove("le_");
         //qCDebug(logDebug()) << reg_name << value;
-        this->modbus_server->setRegisterString(QModbusDataUnit::InputRegisters, reg_name, value);
+        this->modbus_server->setRegisterString(reg_name, value);
     }
 }
 
@@ -505,7 +505,7 @@ void MainWindow::StringHoldingRegistersChanged(const QString &value) {
         QString reg_name = sender->objectName();
         reg_name = reg_name.remove("le_");
         //qCDebug(logDebug()) << reg_name << value;
-        this->modbus_server->setRegisterString(QModbusDataUnit::HoldingRegisters, reg_name, value);
+        this->modbus_server->setRegisterString(reg_name, value);
     }
 }
 
