@@ -8,7 +8,7 @@
 #include <locale.h>
 
 #include "Config.h"
-#include "modbus_functions.h"
+#include "ModbusDataConverter.h"
 #include "Random.h"
 
 const int StatusTimeout = AQP::MSecPerSecond * 10;
@@ -333,45 +333,19 @@ void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
     qCDebug(logDebug()) << "modbus_read" << reg_name << mdu.startAddress() << mdu.valueCount() << mdu.values();
 
     auto reg_data_type_m = modbus_server->get_reg_data_type_m();
-    QString reg_data_type = "double";
+    QString dataType = "double";
     if (reg_data_type_m.count(reg_name) > 0) {
-        reg_data_type = reg_data_type_m[reg_name];
+        dataType = reg_data_type_m[reg_name];
     }
 
-    if (reg_data_type.toLower().contains("string")) {
+    if (dataType.toLower().contains("string")) {
         // Обработка строкового регистра
         auto le = this->ui->gb4->findChild<QLineEdit*>("le_" + reg_name);
         if (le) {
-            // Преобразуем регистры обратно в строку
-            QByteArray byteArray;
-            for (int i = 0; i < mdu.valueCount(); i++) {
-                quint16 reg = mdu.values()[i];
-                byteArray.append((reg >> 8) & 0xFF); // Старший байт
-                byteArray.append(reg & 0xFF);        // Младший байт
-            }
-            // Обрезаем до первого нулевого байта (C-style string)
-            int nullPos = byteArray.indexOf('\0');
-            if (nullPos != -1) {
-                byteArray.truncate(nullPos);
-            } else {
-                // Если нулевого байта нет, обрезаем до размера, кратного 2 (регистрам)
-                // Убираем возможные мусорные байты в конце
-                int actualLength = byteArray.size();
-                // Попробуем найти конец строки по первому непечатному символу
-                for (int i = 0; i < byteArray.size(); i++) {
-                    char c = byteArray[i];
-                    if (c < 32 || c > 126) { // Непечатные символы ASCII
-                        actualLength = i;
-                        break;
-                    }
-                }
-                byteArray.truncate(actualLength);
-            }
-            QString str = QString::fromUtf8(byteArray);
-            str = str.trimmed();
-
             disconnect(le, &QLineEdit::textChanged, this, &MainWindow::StringHoldingRegistersChanged);
-            le->setText(str);
+            //le->setText(str);
+            QVariant value = ModbusDataConverter::registersToVariant(mdu.values(), dataType, this->modbus_server->modbus_format());
+            le->setText(value.toString());
             connect(le, &QLineEdit::textChanged, this, &MainWindow::StringHoldingRegistersChanged);
         }
     } else {
@@ -400,36 +374,8 @@ void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
                     disconnect(dsb, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &MainWindow::HoldingRegistersChanged);
     #endif
 #endif
-
-                    if ((mdu.valueCount() == 4) && (reg_data_type.toLower().contains("double"))) {
-                        double v = usa_to_double(&mdu.values()[0], this->modbus_server->modbus_format());
-                        dsb->setValue(v);
-                    } else if ((mdu.valueCount() == 4) && (reg_data_type.toLower().contains("ulong"))) {
-                        unsigned long long v = usa_to_ulong(&mdu.values()[0], this->modbus_server->modbus_format());
-                        dsb->setValue(v);
-                    } else if ((mdu.valueCount() == 4) && (reg_data_type.toLower().contains("long"))) {
-                        long long v = usa_to_long(&mdu.values()[0], this->modbus_server->modbus_format());
-                        dsb->setValue(v);
-                    } else if ((mdu.valueCount() == 2) && (reg_data_type.toLower().contains("float"))) {
-                        float v = usa_to_float(&mdu.values()[0], this->modbus_server->modbus_format());
-                        dsb->setValue(v);
-                    } else if ((mdu.valueCount() == 2) && (reg_data_type.toLower().contains("uint"))) {
-                        unsigned int v = usa_to_uint(&mdu.values()[0], this->modbus_server->modbus_format());
-                        dsb->setValue(v);
-                    } else if ((mdu.valueCount() == 2) && (reg_data_type.toLower().contains("int"))) {
-                        int v = usa_to_int(&mdu.values()[0], this->modbus_server->modbus_format());
-                        dsb->setValue(v);
-                    } else if ((mdu.valueCount() == 1) && (reg_data_type.toLower().contains("ushort"))) {
-                        unsigned short v = mdu.values()[0];
-                        dsb->setValue(v);
-                    } else if ((mdu.valueCount() == 1) && (reg_data_type.toLower().contains("short"))) {
-                        short v = (short)mdu.values()[0];
-                        dsb->setValue(v);
-                    } else if (mdu.valueCount() == 1) {
-                        dsb->setValue(mdu.values()[0]);
-                    } else {
-
-                    }
+                    QVariant value = ModbusDataConverter::registersToVariant(mdu.values(), dataType, this->modbus_server->modbus_format());
+                    dsb->setValue(value.toDouble());
 #if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
                     connect(dsb, &QDoubleSpinBox::valueChanged, this, &MainWindow::HoldingRegistersChanged);
 #else
