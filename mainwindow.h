@@ -76,7 +76,7 @@ private slots:
     void auth_ok();
     void on_timer();
     void on_random_timer();
-    void modbus_read(QString reg_name, QModbusDataUnit mdu);
+    void modbus_read(QString regName, QModbusDataUnit mdu);
 
     void DiscreteInputsChanged(bool value);
     void CoilsChanged(bool value);

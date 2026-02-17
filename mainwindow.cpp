@@ -329,22 +329,22 @@ void MainWindow::on_random_timer() {
     }
 }
 
-void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
-    qCDebug(logDebug()) << "modbus_read" << reg_name << mdu.startAddress() << mdu.valueCount() << mdu.values();
+void MainWindow::modbus_read(QString regName, QModbusDataUnit mdu) {
+    qCDebug(logDebug()) << "modbus_read" << regName << mdu.startAddress() << mdu.valueCount() << mdu.values();
 
     auto reg_data_type_m = modbus_server->get_reg_data_type_m();
     QString dataType = "double";
-    if (reg_data_type_m.count(reg_name) > 0) {
-        dataType = reg_data_type_m[reg_name];
+    if (reg_data_type_m.count(regName) > 0) {
+        dataType = reg_data_type_m[regName];
     }
 
     if (dataType.toLower().contains("string")) {
         // Обработка строкового регистра
-        auto le = this->ui->gb4->findChild<QLineEdit*>("le_" + reg_name);
+        auto le = this->ui->gb4->findChild<QLineEdit*>("le_" + regName);
         if (le) {
             disconnect(le, &QLineEdit::textChanged, this, &MainWindow::StringHoldingRegistersChanged);
             //le->setText(str);
-            QVariant value = ModbusDataConverter::registersToVariant(mdu.values(), dataType, this->modbus_server->modbus_format());
+            QVariant value = ModbusDataConverter::registersToVariant(mdu.values(), regName, dataType, this->modbus_server->modbus_format());
             le->setText(value.toString());
             connect(le, &QLineEdit::textChanged, this, &MainWindow::StringHoldingRegistersChanged);
         }
@@ -352,7 +352,7 @@ void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
         switch (mdu.registerType()) {
             case QModbusDataUnit::Coils:
             {
-                auto cb = this->ui->gb2->findChild<QCheckBox*>("cb_" + reg_name);
+                auto cb = this->ui->gb2->findChild<QCheckBox*>("cb_" + regName);
                 if (cb) {
                     disconnect(cb, &QCheckBox::clicked, this, &MainWindow::CoilsChanged);
                     cb->setChecked(mdu.value(0));
@@ -362,7 +362,7 @@ void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
             break;
             case QModbusDataUnit::HoldingRegisters:
             {
-                auto dsb = this->ui->gb4->findChild<QDoubleSpinBox*>("dsb_" + reg_name);
+                auto dsb = this->ui->gb4->findChild<QDoubleSpinBox*>("dsb_" + regName);
                 if (dsb) {
 
 #if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
@@ -374,7 +374,7 @@ void MainWindow::modbus_read(QString reg_name, QModbusDataUnit mdu) {
                     disconnect(dsb, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &MainWindow::HoldingRegistersChanged);
     #endif
 #endif
-                    QVariant value = ModbusDataConverter::registersToVariant(mdu.values(), dataType, this->modbus_server->modbus_format());
+                    QVariant value = ModbusDataConverter::registersToVariant(mdu.values(), regName, dataType, this->modbus_server->modbus_format());
                     dsb->setValue(value.toDouble());
 #if QT_VERSION > QT_VERSION_CHECK(6, 0, 0)
                     connect(dsb, &QDoubleSpinBox::valueChanged, this, &MainWindow::HoldingRegistersChanged);
@@ -514,20 +514,20 @@ void MainWindow::modbus_ui() {
     auto reg_data_type_m = modbus_server->get_reg_data_type_m();
 
     for (const auto &_mdu : mdum_v) { //this->_mdum
-        QString name = _mdu.first;
+        QString regName = _mdu.first;
         auto mdu = _mdu.second;
 
         QString reg_data_type = "double";
-        if (reg_data_type_m.count(name) > 0) {
-            reg_data_type = reg_data_type_m[name];
+        if (reg_data_type_m.count(regName) > 0) {
+            reg_data_type = reg_data_type_m[regName];
         }
         //qCDebug(logDebug) << name << mdu.startAddress() << mdu.valueCount() << mdu.values();
         switch (mdu.registerType()) {
             case QModbusDataUnit::DiscreteInputs:
             {
-                auto label = new QLabel(name, this);
+                auto label = new QLabel(regName, this);
                 auto cb = new QCheckBox(this);
-                cb->setObjectName(QString("cb_") + name);
+                cb->setObjectName(QString("cb_") + regName);
 
                 gl1->addWidget(label, di_v.size(), 0);
                 gl1->addWidget(cb, di_v.size(), 1);
@@ -538,9 +538,9 @@ void MainWindow::modbus_ui() {
             break;
             case QModbusDataUnit::Coils:
             {
-                auto label = new QLabel(name, this);
+                auto label = new QLabel(regName, this);
                 auto cb = new QCheckBox(this);
-                cb->setObjectName(QString("cb_") + name);
+                cb->setObjectName(QString("cb_") + regName);
 
                 gl2->addWidget(label, coil_v.size(), 0);
                 gl2->addWidget(cb, coil_v.size(), 1);
@@ -552,9 +552,9 @@ void MainWindow::modbus_ui() {
             case QModbusDataUnit::InputRegisters:
             {
                 if (reg_data_type.toLower().contains("string")) {
-                    auto label = new QLabel(name, this);
+                    auto label = new QLabel(regName, this);
                     auto le = new QLineEdit(this);
-                    le->setObjectName(QString("le_") + name);
+                    le->setObjectName(QString("le_") + regName);
 
                     gl3->addWidget(label, ir_le_v.size() + ir_v.size(), 0);
                     gl3->addWidget(le, ir_le_v.size() + ir_v.size(), 1);
@@ -563,9 +563,9 @@ void MainWindow::modbus_ui() {
 
                     connect(le, &QLineEdit::textChanged, this, &MainWindow::StringInputRegistersChanged);
                 } else {
-                    auto label = new QLabel(name, this);
+                    auto label = new QLabel(regName, this);
                     auto dsb = new QDoubleSpinBox(this);
-                    create_dsb(dsb, name, reg_data_type, mdu);
+                    create_dsb(dsb, regName, reg_data_type, mdu);
 
                     gl3->addWidget(label, ir_le_v.size() + ir_v.size(), 0);
                     gl3->addWidget(dsb, ir_le_v.size() + ir_v.size(), 1);
@@ -587,9 +587,9 @@ void MainWindow::modbus_ui() {
             case QModbusDataUnit::HoldingRegisters:
             {
                 if (reg_data_type.toLower().contains("string")) {
-                    auto label = new QLabel(name, this);
+                    auto label = new QLabel(regName, this);
                     auto le = new QLineEdit(this);
-                    le->setObjectName(QString("le_") + name);
+                    le->setObjectName(QString("le_") + regName);
 
                     gl4->addWidget(label, hr_le_v.size() + hr_v.size(), 0);
                     gl4->addWidget(le, hr_le_v.size() + hr_v.size(), 1);
@@ -598,9 +598,9 @@ void MainWindow::modbus_ui() {
 
                     connect(le, &QLineEdit::textChanged, this, &MainWindow::StringHoldingRegistersChanged);
                 } else {
-                    auto label = new QLabel(name, this);
+                    auto label = new QLabel(regName, this);
                     auto dsb = new QDoubleSpinBox(this);
-                    create_dsb(dsb, name, reg_data_type, mdu);
+                    create_dsb(dsb, regName, reg_data_type, mdu);
 
                     gl4->addWidget(label, hr_le_v.size() + hr_v.size(), 0);
                     gl4->addWidget(dsb, hr_le_v.size() + hr_v.size(), 1);
