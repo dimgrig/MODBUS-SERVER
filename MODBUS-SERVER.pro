@@ -52,7 +52,7 @@ exists(/etc/astra_version) {
 
 INCLUDEPATH += "$$_PRO_FILE_PWD_/"
 INCLUDEPATH += "$$_PRO_FILE_PWD_/../Core"
-INCLUDEPATH += "$$_PRO_FILE_PWD_/../ModbusCore"
+INCLUDEPATH += "$$_PRO_FILE_PWD_/../ModbusCore/modbus-core-lib"
 
 SOURCES += \
     Config.cpp \
