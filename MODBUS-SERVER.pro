@@ -26,7 +26,7 @@ QMAKE_LFLAGS += -Wl,-rpath,'/usr/lib/qt'
 
 exists(/etc/astra_version) {
     LIBS += -L/usr/lib/qt/ -lcore-lib
-    LIBS += -L/usr/lib/qt/ -lmodbus-core-lib
+    LIBS += -L/usr/lib/qt/ -lcore-modbus-lib
 
     DISTFILES += core-gcc10.pri
     include(core-gcc10.pri)
@@ -36,23 +36,23 @@ exists(/etc/astra_version) {
 } else {
     unix {
         LIBS += -L/usr/lib/qt/ -lcore-lib
-        LIBS += -L/usr/lib/qt/ -lmodbus-core-lib
+        LIBS += -L/usr/lib/qt/ -lcore-modbus-lib
     }
 
     win32 {
         DEFINES += win32
         LIBS += -L$${WIN_LIBS_PATH} -lcore-lib
-        LIBS += -L$${WIN_LIBS_PATH} -lmodbus-core-lib
+        LIBS += -L$${WIN_LIBS_PATH} -lcore-modbus-lib
     }
     win64 {
         LIBS += -L$${WIN_LIBS_PATH} -lcore-lib
-        LIBS += -L$${WIN_LIBS_PATH} -lmodbus-core-lib
+        LIBS += -L$${WIN_LIBS_PATH} -lcore-modbus-lib
     }
 }
 
 INCLUDEPATH += "$$_PRO_FILE_PWD_/"
-INCLUDEPATH += "$$_PRO_FILE_PWD_/../Core"
-INCLUDEPATH += "$$_PRO_FILE_PWD_/../ModbusCore/modbus-core-lib"
+INCLUDEPATH += "$$_PRO_FILE_PWD_/../Core/core-lib"
+INCLUDEPATH += "$$_PRO_FILE_PWD_/../Core/core-modbus-lib"
 
 SOURCES += \
     Config.cpp \
