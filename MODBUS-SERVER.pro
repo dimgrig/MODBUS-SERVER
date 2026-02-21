@@ -39,6 +39,7 @@ exists(/etc/astra_version) {
         LIBS += -L/usr/lib/qt/ -lcore-modbus-lib
     }
 
+    WIN_LIBS_PATH = "C:/QtCreatorProjects/libs"
     win32 {
         DEFINES += win32
         LIBS += -L$${WIN_LIBS_PATH} -lcore-lib
