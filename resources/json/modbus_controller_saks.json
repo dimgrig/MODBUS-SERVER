@@ -1,0 +1,147 @@
+[
+    {
+        "RegisterType": "InputRegister",
+        "ObjType": 30000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 1,
+        "Address": 30000,
+        "RegisterDataType": "Float",
+        "DataLength": 2,
+        "RegisterName": "current_pressure"
+    },
+    {
+        "RegisterType": "InputRegister",
+        "ObjType": 30000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 2,
+        "Address": 30002,
+        "RegisterDataType": "Float",
+        "DataLength": 2,
+        "RegisterName": "current_consumption"
+    },
+    {
+        "RegisterType": "InputRegister",
+        "ObjType": 30000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 3,
+        "Address": 30004,
+        "RegisterDataType": "UShort",
+        "DataLength": 1,
+        "RegisterName": "system_status"
+    },
+    {
+        "RegisterType": "InputRegister",
+        "ObjType": 30000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 4,
+        "Address": 30005,
+        "RegisterDataType": "UShort",
+        "DataLength": 1,
+        "RegisterName": "mode_state"
+    },
+    {
+        "RegisterType": "InputRegister",
+        "ObjType": 30000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 5,
+        "Address": 30006,
+        "RegisterDataType": "UShort",
+        "DataLength": 1,
+        "RegisterName": "error_code"
+    },
+    {
+        "RegisterType": "InputRegister",
+        "ObjType": 30000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 15,
+        "Address": 30023,
+        "RegisterDataType": "Float",
+        "DataLength": 2,
+        "RegisterName": "current_temperature"
+    },
+    {
+        "RegisterType": "InputRegister",
+        "ObjType": 30000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 16,
+        "Address": 30025,
+        "RegisterDataType": "UShort",
+        "DataLength": 1,
+        "RegisterName": "firmware_major"
+    },
+    {
+        "RegisterType": "InputRegister",
+        "ObjType": 30000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 17,
+        "Address": 30026,
+        "RegisterDataType": "UShort",
+        "DataLength": 1,
+        "RegisterName": "firmware_minor"
+    },
+    {
+        "RegisterType": "InputRegister",
+        "ObjType": 30000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 18,
+        "Address": 30027,
+        "RegisterDataType": "UShort",
+        "DataLength": 1,
+        "RegisterName": "firmware_patch"
+    },
+    {
+        "RegisterType": "InputRegister",
+        "ObjType": 30000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 19,
+        "Address": 30028,
+        "RegisterDataType": "UShort",
+        "DataLength": 1,
+        "RegisterName": "hardware_version_major"
+    },
+    {
+        "RegisterType": "InputRegister",
+        "ObjType": 30000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 20,
+        "Address": 30029,
+        "RegisterDataType": "UShort",
+        "DataLength": 1,
+        "RegisterName": "hardware_version_minor"
+    },
+
+
+    {
+        "RegisterType": "HoldingRegister",
+        "ObjType": 40000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 1,
+        "Address": 40000,
+        "RegisterDataType": "UShort",
+        "DataLength": 1,
+        "RegisterName": "control_flags"
+    },
+    {
+        "RegisterType": "HoldingRegister",
+        "ObjType": 40000,
+        "PageName": "",
+        "PageType": 0,
+        "Index": 2,
+        "Address": 40001,
+        "RegisterDataType": "UShort",
+        "DataLength": 1,
+        "RegisterName": "operation_mode"
+    }
+]
