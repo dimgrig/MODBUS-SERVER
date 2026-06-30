@@ -10,8 +10,8 @@ Config::Config() {
     //std::cout  <<  "Config::Config()" << std::endl;
     // must be in build-astra-Desktop_Qt_5_15_2-Debug folder for QT CREATOR
     // must be in cmake-build-debug-mingw folder for cmake
-    if (QFile("config.ini").exists()) {
-        QSettings config("config.ini", QSettings::IniFormat);
+    if (QFile(CoreConfig::configFile()).exists()) {
+        QSettings config(CoreConfig::configFile(), QSettings::IniFormat);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         config.setIniCodec("UTF-8"); //Windows-1251
 #endif
@@ -113,14 +113,14 @@ Config::Config() {
         TestRunner::_enable = UNITTEST;
     }
 
-    QString script = "/bin/bash";
-    QString passwd = "echo '123' | sudo -S /bin/bash -c ";
-    QString app = QFileInfo(QApplication::applicationFilePath()).filePath();
-    QString cmd;
+    // QString script = "/bin/bash";
+    // QString passwd = "echo '123' | sudo -S /bin/bash -c ";
+    // QString app = QFileInfo(QApplication::applicationFilePath()).filePath();
+    // QString cmd;
 
-    cmd = QString("'setcap 'cap_net_bind_service=+ep' ") + app + QString("'");
-    QProcess::startDetached(script, QStringList() << "-c" << passwd + cmd);
-    qCDebug(logDebug) << passwd << cmd;
+    // cmd = QString("'setcap 'cap_net_bind_service=+ep' ") + app + QString("'");
+    // QProcess::startDetached(script, QStringList() << "-c" << passwd + cmd);
+    // qCDebug(logDebug) << passwd << cmd;
 
     if (OS == "WIN"){
         //PORT = "COM14"; // #"COM7"

@@ -3,21 +3,19 @@
 #include <QProcess>
 #include <QScreen>
 #include <QSplashScreen>
+#include <QStandardPaths>
 #include <QTranslator>
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QDesktopWidget>
 #endif
 
 #include "aqp.h"
-
+#include "Categories.h"
 #include "Config.h"
+#include "IconManager.h"
+#include "JournalAccess.h"
 #include "Logger.h"
-
-#include "icons.h"
 #include "mainwindow.h"
-
-//#include "Modules/AUTH/Auth.h"
-//#include "Modules/AUTH/User.h"
 
 #include <signal.h>
 
@@ -65,13 +63,24 @@ void handler_sigfpe(int signum) {
 }
 
 int main(int argc, char *argv[]) {
+    {
+        QCoreApplication::setApplicationName("modbus-server"); // важно для AppConfigLocation
+        QCoreApplication::setOrganizationName("ACS");
+
+#ifdef Q_OS_WIN
+        ;
+#else
+        CoreConfig::setUserDataDir(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation));
+#endif
+    }
+
     Application app(argc, argv);
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
     QSplashScreen splash;
     int splash_size = 200;
     splash.setGeometry(0, 0, splash_size, splash_size);
-    splash.setPixmap(SPLASH.scaled(splash_size, splash_size, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    splash.setPixmap(IconManager::getPixmap(":/icons/splash_acs.svg", QSize(splash_size, splash_size)));
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     splash.move(QApplication::desktop()->screen()->rect().center() - splash.rect().center());
@@ -87,7 +96,7 @@ int main(int argc, char *argv[]) {
     //qDebug(logInfo()) << QStyleFactory::keys();
     app.setApplicationDisplayName(cfg.APPLICATION_NAME);
 
-    app.setWindowIcon(ICON);
+    app.setWindowIcon(ICON_APP);
 
     QTranslator translator;
     //C:\Qt\5.15.2\mingw81_32\translations

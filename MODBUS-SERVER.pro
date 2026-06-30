@@ -22,11 +22,11 @@ include(qmake-destination-path.pri)
 DEFINES += NOCRYPT #fix DOMDocument ambigious with qcustomplot
 DEFINES += NOUSER
 
-QMAKE_LFLAGS += -Wl,-rpath,'/usr/lib/qt'
-
 exists(/etc/astra_version) {
-    LIBS += -L/usr/lib/qt/ -lcore-lib
-    LIBS += -L/usr/lib/qt/ -lcore-modbus-lib
+    LIBS += -L$${LINUX_LIBS_PATH} -lcore-lib
+    LIBS += -L$${LINUX_LIBS_PATH} -lcore-journal-lib
+    LIBS += -L$${LINUX_LIBS_PATH} -lcore-modbus-lib
+    LIBS += -L$${LINUX_LIBS_PATH} -lcore-widgets-lib
 
     DISTFILES += core-gcc10.pri
     include(core-gcc10.pri)
@@ -35,38 +35,43 @@ exists(/etc/astra_version) {
     message($${ASTRA_QT_PATH})
 } else {
     unix {
-        LIBS += -L/usr/lib/qt/ -lcore-lib
-        LIBS += -L/usr/lib/qt/ -lcore-modbus-lib
+    LIBS += -L$${LINUX_LIBS_PATH} -lcore-lib
+    LIBS += -L$${LINUX_LIBS_PATH} -lcore-journal-lib
+    LIBS += -L$${LINUX_LIBS_PATH} -lcore-modbus-lib
+    LIBS += -L$${LINUX_LIBS_PATH} -lcore-widgets-lib
     }
 
     WIN_LIBS_PATH = "C:/QtCreatorProjects/libs"
     win32 {
         DEFINES += win32
         LIBS += -L$${WIN_LIBS_PATH} -lcore-lib
+        LIBS += -L$${WIN_LIBS_PATH} -lcore-journal-lib
         LIBS += -L$${WIN_LIBS_PATH} -lcore-modbus-lib
+        LIBS += -L$${WIN_LIBS_PATH} -lcore-widgets-lib
     }
     win64 {
+        DEFINES += win64
         LIBS += -L$${WIN_LIBS_PATH} -lcore-lib
+        LIBS += -L$${WIN_LIBS_PATH} -lcore-journal-lib
         LIBS += -L$${WIN_LIBS_PATH} -lcore-modbus-lib
+        LIBS += -L$${WIN_LIBS_PATH} -lcore-widgets-lib
     }
 }
 
 INCLUDEPATH += "$$_PRO_FILE_PWD_/"
 INCLUDEPATH += "$$_PRO_FILE_PWD_/../Core/core-lib"
+INCLUDEPATH += "$$_PRO_FILE_PWD_/../Core/core-journal-lib"
 INCLUDEPATH += "$$_PRO_FILE_PWD_/../Core/core-modbus-lib"
+INCLUDEPATH += "$$_PRO_FILE_PWD_/../Core/core-widgets-lib"
 
 SOURCES += \
     Config.cpp \
-    MessageBox.cpp \
-    aqp.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
     Config.h \
     Random.h \
-    aqp.h \
-    icons.h \
     mainwindow.h
 
 FORMS += \
