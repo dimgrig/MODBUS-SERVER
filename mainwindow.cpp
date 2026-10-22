@@ -8,8 +8,9 @@
 #include <locale.h>
 
 #include "Config.h"
-#include <core-modbus-lib/ModbusDataConverter.h>
 #include <core-lib/Random.h>
+#include <core-modbus-lib/ModbusDataConverter.h>
+#include <core-widgets-lib/ConnectionButton.h>
 
 const int StatusTimeout = AQP::MSecPerSecond * 10;
 
@@ -96,6 +97,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     this->read_config();
 
+    this->modbus_settings_ui->setObjectName("modbusSettingsUI");
     //this->ui->modbus_settings_layout->addWidget(this->modbus_client, 3, 0, 2, 0);
     this->ui->modbus_settings_layout->addWidget(this->modbus_settings_ui, 3, 0, 2, 0);
 
@@ -176,6 +178,16 @@ void MainWindow::connect_signal_slot() {
         this->modbus_ui();
     });
     connect(this->modbus_server, &ModbusServer::config_changed, this->modbus_settings_ui, &ModbusSettingsUI::set_config);
+
+    connect(this->modbus_server, &ModbusServer::host_connecting, this, [this]() {
+        this->modbus_settings_ui->setSettingsEnabled(false);
+    });
+    connect(this->modbus_server, &ModbusServer::host_connected, this, [this]() {
+        this->modbus_settings_ui->setSettingsEnabled(false);
+    });
+    connect(this->modbus_server, &ModbusServer::host_disconnected, this, [this]() {
+        this->modbus_settings_ui->setSettingsEnabled(true);
+    });
 }
 
 void MainWindow::read_config(){
@@ -191,7 +203,39 @@ void MainWindow::menu_bar() {
 }
 
 void MainWindow::tool_bar() {
+    if (!this->ui->toolbar) {
+        return;
+    }
 
+    // Общие иконки (connected/connecting/disconnected) — из Core-ресурсов.
+    auto* connBtn = new ConnectionButton(this->ui->toolbar);
+    connBtn->setObjectName("connBtn");
+    connBtn->setToolTip(tr("Подключение"));
+    this->ui->toolbar->addWidget(connBtn);
+
+    // Состояния ModbusServer → визуализация кнопки
+    connect(this->modbus_server, &ModbusServer::host_connected,
+            connBtn, &ConnectionButton::onConnected);
+    connect(this->modbus_server, &ModbusServer::host_disconnected,
+            connBtn, &ConnectionButton::onDisconnected);
+    connect(this->modbus_server, &ModbusServer::host_connecting,
+            connBtn, &ConnectionButton::onConnecting);
+
+    // Нажатия кнопки → действия
+    connect(connBtn, &ConnectionButton::connectRequested,
+            this->modbus_server, &ModbusServer::connectToHost);
+    connect(connBtn, &ConnectionButton::disconnectRequested,
+            this->modbus_server, &ModbusServer::disconnectFromHost);
+
+    QTimer::singleShot(1000, connBtn, [this, connBtn]() {
+        int s = 0;
+        switch (this->modbus_server->state()) {
+        case QModbusDevice::ConnectedState:  s = 2; break;
+        case QModbusDevice::ConnectingState: s = 1; break;
+        default:                             s = 0; break;
+        }
+        connBtn->forceState(s);
+    });
 }
 
 void MainWindow::auth_users() {

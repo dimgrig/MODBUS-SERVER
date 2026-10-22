@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QStyleFactory>
 #include <QProcess>
+#include <QResource>
 #include <QScreen>
 #include <QSplashScreen>
 #include <QStandardPaths>
@@ -69,12 +70,13 @@ int main(int argc, char *argv[]) {
     }
 
     Application app(argc, argv);
+    Q_INIT_RESOURCE(resources);
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
     QSplashScreen splash;
     int splash_size = 200;
     splash.setGeometry(0, 0, splash_size, splash_size);
-    splash.setPixmap(IconManager::getPixmap(":/icons/splash_acs.svg", QSize(splash_size, splash_size)));
+    splash.setPixmap(IconManager::getPixmap(":/icons/splash_modbus_server.svg", QSize(splash_size, splash_size)));
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     splash.move(QApplication::desktop()->screen()->rect().center() - splash.rect().center());
@@ -90,9 +92,9 @@ int main(int argc, char *argv[]) {
     //qDebug(logInfo()) << QStyleFactory::keys();
     app.setApplicationDisplayName(cfg.APPLICATION_NAME);
 
-    // Identity приложения — из локального qrc (app_acs.ico / app_acs.svg)
-    IconManager::setApplicationIcon(QIcon(":/icons/app_acs.ico"));
-    IconManager::setApplicationLogo(QPixmap(":/icons/app_acs.svg"));
+    // Identity приложения — из локального qrc
+    IconManager::setApplicationIcon(QIcon(":/icons/modbus.ico"));
+    IconManager::setApplicationLogo(QPixmap(":/icons/modbus.svg"));
     app.setWindowIcon(IconManager::applicationIcon());
 
     MainWindow w;
@@ -100,6 +102,19 @@ int main(int argc, char *argv[]) {
     w.show();    
     splash.finish(&w);
     //w.init_auth_users();
+
+    // ── Автоподключение (удобно для CI/диагностики) ──────────
+    if (qEnvironmentVariableIsSet("MODBUS_AUTOCONNECT")) {
+        qInfo() << "MODBUS_AUTOCONNECT=1 — triggering connect after 200ms";
+        QTimer::singleShot(200, &w, [&w]() {
+            if (auto* btn = w.findChild<ConnectionButton*>("connBtn")) {
+                emit btn->connectRequested();
+                qCDebug(logDebug) << "MODBUS_AUTOCONNECT: connectRequested emitted";
+            } else {
+                qCDebug(logDebug) << "MODBUS_AUTOCONNECT: ConnectionButton not found";
+            }
+        });
+    }
 
     // ── Smoke / CI-режим ─────────────────────────────────────
     // MODBUS_SMOKE=1 — приложение стартует, через 1000 мс проверяет

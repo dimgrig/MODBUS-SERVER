@@ -11,10 +11,13 @@
         <file>json/modbus_controller_saks.json</file>
     </qresource>
     <qresource prefix="/icons">
-        <file>resources.qrc</file>
-        <file>app_acs.ico</file>
-        <file>app_acs.svg</file>
-        <file>splash_acs.svg</file>
+        <file>modbus.png</file>
+        <file>modbus_client.png</file>
+        <file>modbus_server.png</file>
+        <file>modbus.svg</file>
+        <file>splash_modbus_client.svg</file>
+        <file>splash_modbus_server.svg</file>
+        <file>modbus.ico</file>
     </qresource>
     <qresource prefix="/bg"/>
 </RCC>
