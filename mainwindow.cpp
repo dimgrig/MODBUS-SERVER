@@ -8,8 +8,8 @@
 #include <locale.h>
 
 #include "Config.h"
-#include "ModbusDataConverter.h"
-#include "Random.h"
+#include <core-modbus-lib/ModbusDataConverter.h>
+#include <core-lib/Random.h>
 
 const int StatusTimeout = AQP::MSecPerSecond * 10;
 
@@ -50,24 +50,8 @@ MainWindow::MainWindow(QWidget *parent)
     this->setFont(QFont("Noto Sans", 10)); //10
     //qCDebug(logDebug()) << this->font();
 
-//    QLocale locale = QLocale::system(); // current locale
-//    QLocale russian(QLocale::Russian);
-//    locale.setNumberOptions(russian.numberOptions()); // borrow number options from the Russian locale
-//    QLocale::setDefault(locale); // set as default
-    QLocale::setDefault(QLocale::Russian);
-    QLocale::setDefault(QLocale::Russian);
     QLocale::setDefault(QLocale::Russian);
     QLocale locale = QLocale::system(); // current locale
-    //if (locale.name() != "ru_RU") {
-//        qCDebug(logDebug()) << std::locale().name() << locale.name() << QLocale().name();
-//        AQP::warning(this, "Ошибка", "Ошибка установки локали. Выполнить sudo dpkg-reconfigure locales и выбрать локаль ru_RU");
-//        exit(1);
-//    }
-
-//    qCDebug(logDebug()) << std::locale().name() << locale.name();
-//    setlocale(LC_ALL, "ru_RU");
-//    //std::locale::global(std::locale(std::locale("ru_RU"), "C", std::locale::numeric));
-    //qCDebug(logDebug()) << std::locale().name() << locale.name();
 
     // Создаем новые layout'ы
     gl1 = new QGridLayout();
@@ -95,10 +79,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     //this->ui->centralwidget->hide();
 
-    //this->ui->pb_test->setVisible(false);
-    //this->ui->pb_test_oscillogram->setVisible(false);
-    //this->ui->pb_quit->setVisible(false);
-
     //setWindowTitle(QString("%1[*]").arg(QApplication::applicationDisplayName()));
     setWindowTitle(QString("[*]"));
 
@@ -119,44 +99,11 @@ MainWindow::MainWindow(QWidget *parent)
     //this->ui->modbus_settings_layout->addWidget(this->modbus_client, 3, 0, 2, 0);
     this->ui->modbus_settings_layout->addWidget(this->modbus_settings_ui, 3, 0, 2, 0);
 
-    // if (cfg.PROXY) {
-    //     QNetworkProxy proxy;
-    //     proxy.setType(QNetworkProxy::DefaultProxy);
-    //     proxy.setHostName(cfg.PROXY_HOST); //"192.168.7.1"
-    //     proxy.setPort(cfg.PROXY_PORT); //3128
-    //     //proxy.setUser("username");
-    //     //proxy.setPassword("password");
-
-    //     QNetworkProxy::setApplicationProxy(proxy);
-    // }
-
     modbus_server->set_modbus_settings(this->modbus_settings_ui->getSettingsFromUi());
     modbus_server->connectToHost();
     modbus_settings_ui->set_config(modbus_server->get_config());
 
     this->modbus_ui();
-
-
-//    this->ui->cb_language->addItems(QStringList() << "ru_RU" << "en_US");
-//    this->ui->cb_language->setCurrentText("en_US");
-
-//#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-//    connect(this->ui->cb_language, static_cast<void (QComboBox::*)(const QString &)>(&QComboBox::currentIndexChanged),
-//           [=](const QString &str){
-//       qtLanguageTranslator.load("QtLanguage_" + str, QCoreApplication::applicationDirPath());   // Загружаем перевод
-//       qApp->installTranslator(&qtLanguageTranslator);        // Устанавливаем перевод в приложение
-//    });
-//#endif
-//#if QT_VERSION > QT_VERSION_CHECK(5, 15, 8)
-//    connect(this->ui->cb_language, &QComboBox::currentTextChanged,
-//           [=](const QString &str){
-//       qtLanguageTranslator.load("QtLanguage_" + str, QCoreApplication::applicationDirPath());   // Загружаем перевод
-//       qApp->installTranslator(&qtLanguageTranslator);        // Устанавливаем перевод в приложение
-//    });
-//#endif
-
-//    qtLanguageTranslator.load(QString("QtLanguage_") + QString("en_US"), QCoreApplication::applicationDirPath());
-//    qApp->installTranslator(&qtLanguageTranslator);
 }
 
 MainWindow::~MainWindow() {
@@ -186,23 +133,11 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 bool MainWindow::eventFilter(QObject *target, QEvent *event) {
     Q_UNUSED(target);
     Q_UNUSED(event);
-//    if (event->type() == QEvent::Shortcut) {
-//        // If I care about this shortcut, then return true to intercept
-//        // Else, return false to let the application process it
-//        if (!cfg.ENABLE_SHORTCUTS) {
-//            qCDebug(logDebug()) << "SHORTCUT IGNORES";
-//            return true;
-//        }
-//        qCDebug(logDebug()) << "SHORTCUT RUNS";
-//    }
 
     return false;
 }
 
 void MainWindow::connect_signal_slot() {
-//    connect(this->timer, &QTimer::timeout, this, &MainWindow::on_timer);
-//    this->timer->start(this->ui->sb_poll_timer->value());
-
     connect(this->modbus_server, &ModbusServer::read_ready, this, &MainWindow::modbus_read);
 
     connect(this->random_timer, &QTimer::timeout, this, &MainWindow::on_random_timer);
@@ -244,28 +179,10 @@ void MainWindow::connect_signal_slot() {
 }
 
 void MainWindow::read_config(){
-    //this->ui->dsb_ph->setValue(cfg.ph);
-
-    //this->ui->sb_poll_timer->setValue(cfg.MODBUS_POLL_TIMER);
-
     this->modbus_settings_ui->read_config(cfg.MODBUS_SETTINGS);
 }
 
 void MainWindow::write_config(){
-    //cfg.ph = this->ui->dsb_ph->value();
-
-    //cfg.MODBUS_POLL_TIMER = this->ui->sb_poll_timer->value();
-
-//     QSettings config(CoreConfig::configFile(), QSettings::IniFormat);
-// #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-//     config.setIniCodec("UTF-8"); //Windows-1251
-// #endif
-
-    // config.beginGroup("parameters");
-
-    // config.setValue("MODBUS_POLL_TIMER", cfg.MODBUS_POLL_TIMER);
-    // config.endGroup();
-
     cfg.MODBUS_SETTINGS = this->modbus_settings_ui->write_config();
 }
 
@@ -303,8 +220,6 @@ void MainWindow::test() {
 
 bool MainWindow::okToClearData()
 {
-//    if (isWindowModified())
-//        return AQP::okToClearData(&MainWindow::save_as, this, tr("Несохраненные изменения"), tr("Тестовая карта содержит несохраненные изменения. Сохранить изменения?"));
     return true;
 }
 
@@ -313,8 +228,7 @@ void MainWindow::auth_ok() {
 }
 
 void MainWindow::on_timer() {
-    //qCDebug(logDebug()) << "modbus_read_request";
-    //this->modbus_client->on_read(QModbusDataUnit::RegisterType::HoldingRegisters, MODBUS_UPDATE_START_INDEX, MODBUS_UPDATE_CNT);
+
 }
 
 void MainWindow::on_random_timer() {

@@ -9,12 +9,15 @@
 #include <QDesktopWidget>
 #endif
 
-#include "aqp.h"
-#include "Categories.h"
+#include <core-widgets-lib/aqp.h>
+#include <core-journal-lib/Categories.h>
+#include <core-widgets-lib/IconManager.h>
+#include <core-journal-lib/JournalAccess.h>
+#include <core-lib/Logger.h>
+#include <core-widgets-lib/ConnectionButton.h>
+#include <core-modbus-lib/ModbusSettings.h>
+
 #include "Config.h"
-#include "IconManager.h"
-#include "JournalAccess.h"
-#include "Logger.h"
 #include "mainwindow.h"
 
 #include <signal.h>
@@ -40,15 +43,6 @@ public:
         return false;
     }
 };
-
-//void bash() {
-//    QProcess process1;
-//    process1.start("sudo su");
-
-//    process1.start("chmod 777 /dev/ptyp98");
-//    process1.start("chmod 777 /dev/ptyp99");
-//    process1.start("rm /tmp/RMO_diode_local_server");
-//}
 
 void handler_sigsegv(int signum) {
     //MessageBoxA(NULL, "SIGSEGV Error!", "POSIX Signal", MB_ICONSTOP);
@@ -96,26 +90,10 @@ int main(int argc, char *argv[]) {
     //qDebug(logInfo()) << QStyleFactory::keys();
     app.setApplicationDisplayName(cfg.APPLICATION_NAME);
 
-    app.setWindowIcon(ICON_APP);
-
-    QTranslator translator;
-    //C:\Qt\5.15.2\mingw81_32\translations
-    translator.load(QTBASE_RU);
-    //translator.load(QString("QtLanguage_") + QString("ru_RU"));
-    app.installTranslator(&translator);
-
-    //fix locale in debug
-    //https://ru.stackoverflow.com/questions/723433/qt5-%D0%BE%D1%82%D0%BB%D0%B0%D0%B4%D1%87%D0%B8%D0%BA-%D0%B2%D1%8B%D0%B4%D0%B0%D1%91%D1%82-%D0%BD%D0%B5%D1%87%D0%B8%D1%82%D0%B0%D0%B5%D0%BC%D1%8B%D0%B9-%D1%82%D0%B5%D0%BA%D1%81%D1%82
-    //sudo nano /usr/share/applications/org.qt-project.qtcreator.desktop
-    //Exec=env LC_ALL=ru_RU.UTF-8 qtcreator %F
-
-//    QString locale = QLocale::system().name(); // запрос языка (например: "ru")
-//    QTranslator* translator = new QTranslator; // создаем переводчик
-//    translator->load(QString("qt_") + locale);  // загрузка файла qt_*.qm*
-//    app.installTranslator(translator);         // устанока переводчика
-
-//    signal(SIGSEGV, handler_sigsegv);
-//    signal(SIGFPE, handler_sigfpe);
+    // Identity приложения — из локального qrc (app_acs.ico / app_acs.svg)
+    IconManager::setApplicationIcon(QIcon(":/icons/app_acs.ico"));
+    IconManager::setApplicationLogo(QPixmap(":/icons/app_acs.svg"));
+    app.setWindowIcon(IconManager::applicationIcon());
 
     MainWindow w;
     //splash.close();
@@ -123,7 +101,37 @@ int main(int argc, char *argv[]) {
     splash.finish(&w);
     //w.init_auth_users();
 
-    //qCDebug(logInfo()) << "RMO_diode started";
+    // ── Smoke / CI-режим ─────────────────────────────────────
+    // MODBUS_SMOKE=1 — приложение стартует, через 1000 мс проверяет
+    // ключевые элементы UI и выходит с кодом 0/1.
+    if (qEnvironmentVariableIsSet("MODBUS_SMOKE")) {
+        QTimer::singleShot(1000, &w, [&w]() {
+            int failures = 0;
+
+            auto* btn = w.findChild<ConnectionButton*>("connBtn");
+            if (btn) {
+                qCDebug(logDebug).noquote()
+                << "[ OK ] ConnectionButton found, text=" << btn->text()
+                << " iconNull=" << btn->icon().isNull();
+            } else {
+                qCDebug(logDebug) << "[FAIL] ConnectionButton 'connBtn' not found";
+                ++failures;
+            }
+
+            auto* settings = w.findChild<QWidget*>("modbusSettingsUI");
+            if (settings) {
+                qCDebug(logDebug).noquote()
+                << "[ OK ] ModbusSettingsUI found, enabled=" << settings->isEnabled();
+            } else {
+                qCDebug(logDebug) << "[FAIL] modbusSettingsUI not found";
+                ++failures;
+            }
+
+            qCDebug(logDebug) << "SMOKE FAILURES:" << failures;
+            QCoreApplication::exit(failures > 0 ? 1 : 0);
+        });
+    }
+
     QApplication::restoreOverrideCursor();
     return app.exec();    
 }

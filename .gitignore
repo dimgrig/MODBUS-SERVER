@@ -6,7 +6,7 @@
 *.la
 *.lai
 #*.so
-#*.so.*
+*.so.*
 #*.dll
 *.dylib
 
@@ -29,7 +29,8 @@ ui_*.h
 *.jsc
 Makefile*
 *build-*
-#*.qm
+*build*
+*.qm
 *.prl
 
 # Qt unit tests
@@ -50,3 +51,6 @@ compile_commands.json
 
 # QtCreator local machine specific files for imported projects
 *creator.user*
+
+!docker-build*
+!*build*pri

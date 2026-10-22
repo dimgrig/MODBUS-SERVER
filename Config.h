@@ -14,8 +14,8 @@
 
 //#define QT_5_15
 
-#include "Logger.h"
-#include "ModbusSettings.h"
+#include <core-lib/Logger.h>
+#include <core-modbus-lib/ModbusSettings.h>
 
 #ifdef QT_5_15
     #define QT_HEX Qt::hex
