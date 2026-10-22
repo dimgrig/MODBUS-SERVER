@@ -170,12 +170,24 @@ void MainWindow::connect_signal_slot() {
         if (connected) {
             modbus_server->disconnectFromHost();
         }
-        modbus_server->set_modbus_config(path);
+
+        if (path.endsWith(".csv", Qt::CaseInsensitive)) {
+            modbus_server->set_modbus_config_csv(path);
+        } else {
+            modbus_server->set_modbus_config(path);
+        }
+
         if (connected) {
             modbus_server->connectToHost();
         }
 
         this->modbus_ui();
+
+        QSettings s(CoreConfig::configFile(), QSettings::IniFormat);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+        s.setIniCodec("UTF-8");
+#endif
+        s.setValue("modbus-server/LAST_CONFIG", path);
     });
     connect(this->modbus_server, &ModbusServer::config_changed, this->modbus_settings_ui, &ModbusSettingsUI::set_config);
 
@@ -192,9 +204,34 @@ void MainWindow::connect_signal_slot() {
 
 void MainWindow::read_config(){
     this->modbus_settings_ui->read_config(cfg.MODBUS_SETTINGS);
+
+    // Загрузка последнего конфига (JSON или CSV), если он сохранён
+    // и файл существует. Выполняется до первого connectToHost() в конструкторе,
+    // поэтому connect() уже будет с готовыми _mdum/типами.
+    QSettings s(CoreConfig::configFile(), QSettings::IniFormat);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    s.setIniCodec("UTF-8");
+#endif
+    const QString last = s.value("modbus-server/LAST_CONFIG", QString()).toString();
+    if (!last.isEmpty() && QFile::exists(last)) {
+        this->modbus_settings_ui->set_config(last);
+        if (last.endsWith(".csv", Qt::CaseInsensitive)) {
+            this->modbus_server->set_modbus_config_csv(last);
+        } else {
+            this->modbus_server->set_modbus_config(last);
+        }
+    }
 }
 
 void MainWindow::write_config(){
+    QSettings config(CoreConfig::configFile(), QSettings::IniFormat);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    config.setIniCodec("UTF-8"); //Windows-1251
+#endif
+
+    config.beginGroup("parameters");
+    config.endGroup();
+
     cfg.MODBUS_SETTINGS = this->modbus_settings_ui->write_config();
 }
 
@@ -276,15 +313,24 @@ void MainWindow::on_timer() {
 }
 
 void MainWindow::on_random_timer() {
-    if (this->ui->cb_random->isChecked()) {
-        double sko = this->ui->dsb_sko->value();
-        for (auto &dsb : hr_v) {
-            double value = sko * dsb->value() / 100;
-            double random = Random::get(-value, value);
-            //qCDebug(logDebug()) << sko << value << random;
-            dsb->setValue(dsb->value() + random);
+    if (!this->ui->cb_random->isChecked()) return;
+
+    const double sko = this->ui->dsb_sko->value();
+
+    // Применяем рандомизацию к HoldingRegisters и InputRegisters.
+    // На сервере IR — внутренние регистры, доступные только на чтение
+    // со стороны клиента; сервер вправе менять их локально.
+    auto apply_random = [sko](std::vector<QDoubleSpinBox*>& spins) {
+        for (auto* dsb : spins) {
+            if (!dsb) continue;
+            const double delta = sko * dsb->value() / 100.0;
+            if (delta == 0.0) continue;
+            dsb->setValue(dsb->value() + Random::get(-delta, delta));
         }
-    }
+    };
+
+    apply_random(hr_v);
+    apply_random(ir_v);
 }
 
 void MainWindow::modbus_read(int serverAddress, QString regName, QModbusDataUnit mdu) {
@@ -418,6 +464,7 @@ void MainWindow::StringHoldingRegistersChanged(const QString &value) {
 void create_dsb(QDoubleSpinBox* dsb, const QString &name, const QString &reg_type, const QModbusDataUnit &mdu) {
     dsb->setObjectName(QString("dsb_") + name);
     dsb->setMinimumSize({50, 20});
+
     if (reg_type.toLower().contains("float") || reg_type.toLower().contains("double")) {
         //float or double
         dsb->setDecimals(2);

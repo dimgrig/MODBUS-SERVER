@@ -5,10 +5,6 @@
     <qresource prefix="/translations"/>
     <qresource prefix="/json">
         <file>json/modbus.json</file>
-        <file>json/modbus_10.json</file>
-        <file>json/modbus_nc3.json</file>
-        <file>json/modbus_ekostubpro_test.json</file>
-        <file>json/modbus_controller_saks.json</file>
     </qresource>
     <qresource prefix="/icons">
         <file>modbus.png</file>
@@ -20,4 +16,7 @@
         <file>modbus.ico</file>
     </qresource>
     <qresource prefix="/bg"/>
+    <qresource prefix="/csv">
+        <file>csv/modbus.csv</file>
+    </qresource>
 </RCC>
