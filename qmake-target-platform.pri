@@ -4,10 +4,12 @@ win32 {
     win32-g++ {
         CONFIG += COMPILER_GCC
         message(COMPILER_GCC)
-        win32-g++:contains(QMAKE_HOST.arch, x86_64):{
-            message("Host is 64bit")            
+        contains(QT_ARCH, x86_64) {
+            QMAKE_TARGET.arch = x86_64
+            message("Target arch: x86_64")
         } else {
-            message("Host is 32bit")
+            QMAKE_TARGET.arch = x86
+            message("Target arch: x86")
         }
     }
     win32-msvc2017 {
@@ -19,17 +21,27 @@ win32 {
 linux {
     CONFIG += PLATFORM_LINUX
     message(PLATFORM_LINUX)
-    # Make QMAKE_TARGET arch available for Linux
-    !contains(QT_ARCH, x86_64){
-        QMAKE_TARGET.arch = x86
-    } else {
-        QMAKE_TARGET.arch = x86_64
+    linux-g++{
+        CONFIG += COMPILER_GCC
+        message(COMPILER_GCC)
     }
-   linux-g++{
-       CONFIG += COMPILER_GCC
-       message(COMPILER_GCC)
-   }
+
+    # Определяем архитектуру
+    contains(QT_ARCH, x86_64) {
+        QMAKE_TARGET.arch = x86_64
+    } else:contains(QT_ARCH, arm64) {
+        QMAKE_TARGET.arch = arm64
+        CONFIG += PROCESSOR_ARM64
+        message(PROCESSOR_ARM64)
+    } else:contains(QT_ARCH, arm) {
+        QMAKE_TARGET.arch = arm
+        CONFIG += PROCESSOR_ARM
+        message(PROCESSOR_ARM)
+    } else {
+        QMAKE_TARGET.arch = x86   # fallback
+    }
 }
+
 macx {
    CONFIG += PLATFORM_OSX
    message(PLATFORM_OSX)
@@ -44,20 +56,22 @@ macx {
        QMAKE_TARGET.arch = x86
    }
 }
-#contains(QMAKE_TARGET.arch, x86_64) {
-#   CONFIG += PROCESSOR_x64
-#   message(PROCESSOR_x64)
-#} else {
-#   CONFIG += PROCESSOR_x86
-#   message(PROCESSOR_x86)
-#}
+
+# Устанавливаем PROCESSOR_* на основе QT_ARCH
 contains(QT_ARCH, x86_64) {
    CONFIG += PROCESSOR_x64
    message(PROCESSOR_x64)
+} else:contains(QT_ARCH, arm64) {
+   CONFIG += PROCESSOR_ARM64
+   message(PROCESSOR_ARM64)
+} else:contains(QT_ARCH, arm) {
+   CONFIG += PROCESSOR_ARM
+   message(PROCESSOR_ARM)
 } else {
    CONFIG += PROCESSOR_x86
    message(PROCESSOR_x86)
 }
+
 CONFIG(debug, release|debug) {
    CONFIG += BUILD_DEBUG
    message(BUILD_DEBUG)
@@ -65,3 +79,6 @@ CONFIG(debug, release|debug) {
    CONFIG += BUILD_RELEASE
    message(BUILD_RELEASE)
 }
+
+message("Qt version: $$QT_VERSION")
+message("Qt major: $$section(QT_VERSION, ., 0, 0)")

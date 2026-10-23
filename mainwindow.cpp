@@ -188,9 +188,6 @@ void MainWindow::connect_signal_slot() {
     });
     connect(this->modbus_server, &ModbusServer::config_changed, this->modbus_settings_ui, &ModbusSettingsUI::set_config);
 
-    connect(this->modbus_server, &ModbusServer::host_connecting, this, [this]() {
-        this->modbus_settings_ui->setSettingsEnabled(false);
-    });
     connect(this->modbus_server, &ModbusServer::host_connected, this, [this]() {
         this->modbus_settings_ui->setSettingsEnabled(false);
     });
