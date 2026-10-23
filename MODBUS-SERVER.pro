@@ -52,10 +52,33 @@ RESOURCES += \
 
 TRANSLATIONS += QtLanguage_ru.ts
 CODECFORSRC = UTF-8
-RC_ICONS = resources/app_acs.ico
+RC_ICONS = resources/modbus.ico
 
 DESTDIR     = $$PWD/../$${TARGET}-binaries/$$DESTINATION_PATH
 OBJECTS_DIR = $$PWD/../$${TARGET}-build/$$DESTINATION_PATH/.obj
 MOC_DIR     = $$PWD/../$${TARGET}-build/$$DESTINATION_PATH/.moc
 RCC_DIR     = $$PWD/../$${TARGET}-build/$$DESTINATION_PATH/.qrc
 UI_DIR      = $$PWD/../$${TARGET}-build/$$DESTINATION_PATH/.ui
+
+# ── Windows: копируем DLL рядом с exe ──────────────────────────
+win32|win64 {
+    CORE_SDK_BIN = $${CORE_SDK_ROOT}/bin
+    CORE_DLLS = $$files($${CORE_SDK_BIN}/libcore-*.dll) \
+                $$files($${CORE_SDK_BIN}/libqcustomplot*.dll) \
+                $$files($${CORE_SDK_BIN}/libQtWebApp*.dll)
+    for(dll, CORE_DLLS) {
+        QMAKE_POST_LINK += $$QMAKE_COPY /Y $$shell_path($$dll) $$shell_path($$DESTDIR) $$escape_expand(\\n\\t)
+    }
+
+    # Qt5 + mingw runtime + плагины: windeployqt
+    WINDEPLOYQT = $$shell_path($$[QT_INSTALL_BINS]/windeployqt.exe)
+    QMAKE_POST_LINK += $$WINDEPLOYQT --no-translations --no-opengl-sw --no-quick-import $$shell_path($$DESTDIR/$${TARGET}.exe) $$escape_expand(\\n\\t)
+
+    # mingw runtime
+    MINGW_DIR = $$dirname(QMAKE_CXX)
+    for(rt, libstdc++-6.dll libgcc_s_seh-1.dll libgcc_s_dw2-1.dll libwinpthread-1.dll) {
+        exists($${MINGW_DIR}/$$rt) {
+            QMAKE_POST_LINK += $$QMAKE_COPY /Y $$shell_path($${MINGW_DIR}/$$rt) $$shell_path($$DESTDIR) $$escape_expand(\\n\\t)
+        }
+    }
+}

@@ -54,3 +54,4 @@ compile_commands.json
 
 !docker-build*
 !*build*pri
+!/scripts/*
