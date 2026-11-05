@@ -1,0 +1,40 @@
+# build outputs
+**/*-binaries/
+**/*-build/
+**/build/
+**/out/
+**/dist/
+
+# VCS / IDE
+**/.git/
+**/.github/
+**/.gitignore
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.pro.user
+**/*.pro.user.*
+**/*.creator*
+
+# infra (правка этих файлов не должна инвалидировать COPY)
+**/.dockerignore
+**/Dockerfile*
+**/docker-*.sh
+**/docker-compose.*.yml
+
+# qmake / cmake build artifacts
+**/Makefile
+**/Makefile.*
+**/.qmake.stash
+**/*.o
+**/*.obj
+**/*.moc
+**/moc_*
+**/ui_*.h
+**/*.qrc.depends
+
+# OS
+**/.DS_Store
+**/__pycache__/
+**/*.pyc
+**/*.swp

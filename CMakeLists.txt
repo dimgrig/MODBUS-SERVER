@@ -1,5 +1,13 @@
 cmake_minimum_required(VERSION 3.18)
-project(modbus-server VERSION 1.0.0 LANGUAGES CXX)
+
+# ── Версия из VERSION ─────────────────────
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" _RAW_VER LIMIT_COUNT 1)
+string(STRIP "${_RAW_VER}" MODBUS_VERSION)
+if(NOT MODBUS_VERSION MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+$")
+    message(FATAL_ERROR "VERSION must be X.Y.Z, got '${MODBUS_VERSION}'")
+endif()
+
+project(modbus-server VERSION ${MODBUS_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -94,6 +102,15 @@ endif()
 # find_package(Qt5) не нужен (но и не помешает).
 find_package(Core CONFIG REQUIRED)
 
+# ── Qt6 + MinGW: host rcc (gcc_64) собран с zstd, target Qt6Core (mingw_64) — без ──
+# ── rcc по умолчанию сжимает .qrc через Zstd и генерирует вызов              ──
+# ── qResourceFeatureZstd(), которого нет в mingw Qt6Core → undefined reference. ──
+# ── Отключаем сжатие при генерации ресурсов.                                 ──
+if(QT_VERSION_MAJOR EQUAL 6 AND MINGW)
+    set(CMAKE_AUTORCC_OPTIONS "-compress-algo;none")
+    message(STATUS "modbus-client: AUTORCC_OPTIONS = -compress-algo none (Qt6 mingw zstd workaround)")
+endif()
+
 # ── Исполняемый файл ────────────────────────────────────────────
 add_executable(modbus-server WIN32
     main.cpp
@@ -104,6 +121,9 @@ add_executable(modbus-server WIN32
     uis/mainwindow.ui
     resources/resources.qrc
 )
+
+install(TARGETS modbus-server
+    RUNTIME DESTINATION "bin")
 
 target_include_directories(modbus-server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

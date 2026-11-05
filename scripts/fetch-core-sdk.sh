@@ -15,6 +15,11 @@
 #   CORE_SDK_PLATFORM  default: auto по uname (linux-amd64 / linux-arm64 / win64)
 #   CORE_SDK_VERSION   default: 1.1.0 (перебивается $1)
 #   QT_VERSION_MAJOR   default: 5     (перебивается $4)
+#
+# Правило расширения:
+#   win32 / win64 → .zip
+#   linux-* / arm* → .tar.gz
+# (см. Core release.yml: win-qt5/win-qt6 = .zip, остальное — .tar.gz)
 # ============================================================================
 set -euo pipefail
 
@@ -33,7 +38,6 @@ if [ -z "$PLATFORM" ]; then
         x86_64|amd64)   PLATFORM="linux-amd64" ;;
         aarch64|arm64)  PLATFORM="linux-arm64" ;;
         *)
-            # git-bash / msys на Windows отдаёт x86_64, но OSTYPE=msys
             case "${OSTYPE:-}" in
                 msys*|cygwin*|win32*) PLATFORM="win64" ;;
                 *)                    PLATFORM="linux-amd64" ;;
@@ -42,12 +46,20 @@ if [ -z "$PLATFORM" ]; then
     esac
 fi
 
-ART="Core-Releases-${VERSION}-${PLATFORM}-qt${QT_MAJOR}.tar.gz"
-
-# ── URL ─────────────────────────────────────────────────────────────────────
+# ── ART / URL / EXT ─────────────────────────────────────────────────────────
 if [ -n "$URL_ARG" ]; then
     URL="$URL_ARG"
+    ART="$(basename "$URL")"
+    case "$ART" in
+        *.zip) EXT="zip" ;;
+        *)     EXT="tar.gz" ;;
+    esac
 else
+    case "$PLATFORM" in
+        win32|win64) EXT="zip" ;;
+        *)           EXT="tar.gz" ;;
+    esac
+    ART="Core-Releases-${VERSION}-${PLATFORM}-qt${QT_MAJOR}.${EXT}"
     URL="https://github.com/${REPO}/releases/download/v${VERSION}/${ART}"
 fi
 
@@ -57,8 +69,6 @@ if [ -z "$DEST_ARG" ]; then
 else
     DEST="$DEST_ARG"
 fi
-
-case "$URL" in *.zip) EXT="zip" ;; *) EXT="tar.gz" ;; esac
 
 # ── Идемпотентность ─────────────────────────────────────────────────────────
 if [ -f "$DEST/lib/cmake/Core/CoreConfig.cmake" ]; then
@@ -109,8 +119,17 @@ case "$EXT" in
             unzip -q "$TMP/$ART" -d "$DEST"
         elif command -v 7z >/dev/null 2>&1; then
             7z x -y -o"$DEST" "$TMP/$ART" >/dev/null
+        elif command -v 7za >/dev/null 2>&1; then
+            7za x -y -o"$DEST" "$TMP/$ART" >/dev/null
+        elif command -v bsdtar >/dev/null 2>&1; then
+            # libarchive (bsdtar) — обычно есть на Arch/FreeBSD/macOS,
+            # автодетектит формат по содержимому.
+            bsdtar xf "$TMP/$ART" -C "$DEST"
+        elif command -v python3 >/dev/null 2>&1; then
+            # Стандартный модуль zipfile — работает везде, где есть Python.
+            python3 -m zipfile -e "$TMP/$ART" "$DEST"
         else
-            echo "ERROR: unzip nor 7z available for .zip" >&2
+            echo "ERROR: no unzip/7z/7za/bsdtar/python3 for .zip extraction" >&2
             exit 1
         fi
         ;;
@@ -146,4 +165,4 @@ if [ -z "$DEST_ARG" ]; then
     echo "Symlink: ${PARENT}/latest → ${DEST}"
 fi
 
-echo "Core SDK ${VERSION} (Qt${QT_MAJOR}) installed to ${DEST}"
+echo "Core SDK ${VERSION} (Qt${QT_MAJOR}, ${PLATFORM}) installed to ${DEST}"

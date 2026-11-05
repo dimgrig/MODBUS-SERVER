@@ -1,0 +1,134 @@
+# syntax=docker/dockerfile:1
+# ============================================================================
+# Dockerfile.win — modbus-server, Qt5, Windows x32 (i686 MinGW cross, legacy)
+#
+# Build:
+#   docker buildx build -f Dockerfile.win --target export \
+#       --output type=local,dest=out/win-qt5 \
+#       --build-arg BASE_DEPS_IMAGE=base-deps-win:latest \
+#       .
+# ============================================================================
+ARG BASE_DEPS_IMAGE=base-deps-win:latest
+
+FROM ${BASE_DEPS_IMAGE} AS build
+
+ARG CORE_SDK_VERSION=1.1.0
+ARG CORE_SDK_URL=
+ARG CORE_SDK_PLATFORM=win32
+ARG QT_VERSION_MAJOR=5
+ARG CMAKE_CMD=i686-w64-mingw32-cmake
+ARG CORE_INSTALL_BASE=/opt/modbus-server
+ARG BUILD_TYPE=Release
+
+# 0) base-deps-win = Arch-based (mingw-w64); ensure unzip for fetch-core-sdk.sh
+#    Fallback в скрипте (bsdtar/python3) есть, но с unzip быстрее и нативнее.
+RUN set -eux; \
+    if command -v unzip >/dev/null 2>&1; then \
+        echo "unzip: already available"; \
+    elif command -v pacman >/dev/null 2>&1; then \
+        pacman -Sy --noconfirm --needed unzip && \
+        echo "unzip: installed via pacman"; \
+    else \
+        echo "unzip: not installed — fetch-core-sdk.sh will use bsdtar/python3 fallback"; \
+    fi
+
+ENV CORE_SDK_PLATFORM=${CORE_SDK_PLATFORM} \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
+
+# 1) Core SDK: win32 .zip
+COPY scripts/fetch-core-sdk.sh /usr/local/bin/fetch-core-sdk.sh
+RUN chmod +x /usr/local/bin/fetch-core-sdk.sh && \
+    fetch-core-sdk.sh "${CORE_SDK_VERSION}" "${CORE_SDK_URL}" \
+        "/opt/core/qt${QT_VERSION_MAJOR}/${CORE_SDK_VERSION}" \
+        "${QT_VERSION_MAJOR}" && \
+    ln -sfn "/opt/core/qt${QT_VERSION_MAJOR}/${CORE_SDK_VERSION}" \
+            "/opt/core/qt${QT_VERSION_MAJOR}/latest" && \
+    test -f "/opt/core/qt${QT_VERSION_MAJOR}/latest/lib/cmake/Core/CoreConfig.cmake" && \
+    echo "=== Core SDK win32 / Qt${QT_VERSION_MAJOR} ready ==="
+
+# 2) Сборка modbus-server (кросс, Qt5 mingw32)
+WORKDIR /app
+COPY . /app/modbus-server/
+WORKDIR /app/modbus-server
+
+RUN set -eux; \
+    V="$(tr -d '[:space:]' < VERSION)"; \
+    echo "=== modbus-server v${V} (Qt${QT_VERSION_MAJOR} win32) ==="; \
+    DEST="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
+    CORE_SDK="/opt/core/qt${QT_VERSION_MAJOR}/latest"; \
+    mkdir -p "${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}"; \
+    ${CMAKE_CMD} -S . -B build \
+        -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+        -DQT_VERSION_MAJOR="${QT_VERSION_MAJOR}" \
+        -DCore_DIR="${CORE_SDK}/lib/cmake/Core" \
+        -DCMAKE_INSTALL_PREFIX="${DEST}" \
+        -DMODBUS_SERVER_DEPLOY=OFF; \
+    cmake --build build -j"$(nproc)"; \
+    cmake --install build; \
+    test -f "${DEST}/bin/modbus-server.exe" \
+        || { echo "FATAL: ${DEST}/bin/modbus-server.exe missing" >&2; \
+             find "${DEST}" -maxdepth 3 -type d 2>/dev/null >&2 || true; \
+             find "${DEST}" -maxdepth 3 -type f 2>/dev/null >&2 || true; \
+             exit 1; }; \
+    ln -sfn "${DEST}" "${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/latest"; \
+    mkdir -p "${DEST}/lib" "${DEST}/include" "${DEST}/bin"; \
+    cp -a "${CORE_SDK}/include/." "${DEST}/include/"; \
+    cp -a "${CORE_SDK}/lib/"libcore-*.dll.a       "${DEST}/lib/" 2>/dev/null || true; \
+    cp -a "${CORE_SDK}/lib/"libqcustomplot*.dll.a "${DEST}/lib/" 2>/dev/null || true; \
+    cp -a "${CORE_SDK}/lib/"libQtWebApp*.dll.a    "${DEST}/lib/" 2>/dev/null || true; \
+    cp -a "${CORE_SDK}/bin/"libcore-*.dll         "${DEST}/bin/" 2>/dev/null || true; \
+    cp -a "${CORE_SDK}/bin/"libqcustomplot*.dll   "${DEST}/bin/" 2>/dev/null || true; \
+    cp -a "${CORE_SDK}/bin/"libQtWebApp*.dll      "${DEST}/bin/" 2>/dev/null || true; \
+    mkdir -p "${DEST}/lib/cmake"; \
+    cp -a "${CORE_SDK}/lib/cmake/." "${DEST}/lib/cmake/"; \
+    cp -a /usr/i686-w64-mingw32/bin/Qt5*.dll          "${DEST}/bin/" 2>/dev/null || true; \
+    cp -a /usr/i686-w64-mingw32/bin/libssl*.dll       "${DEST}/bin/" 2>/dev/null || true; \
+    cp -a /usr/i686-w64-mingw32/bin/libcrypto*.dll    "${DEST}/bin/" 2>/dev/null || true; \
+    cp -a /usr/i686-w64-mingw32/bin/libzstd*.dll      "${DEST}/bin/" 2>/dev/null || true; \
+    for dll in libstdc++-6.dll libgcc_s_dw2-1.dll libwinpthread-1.dll libssp-0.dll; do \
+        found="$(find /usr/i686-w64-mingw32/bin /usr/lib/gcc/i686-w64-mingw32 \
+                       -name "$dll" -type f 2>/dev/null | head -1)"; \
+        if [ -n "$found" ]; then \
+            cp -a "$found" "${DEST}/bin/"; \
+        else \
+            echo "WARN: $dll not found (may be not required)" >&2; \
+        fi; \
+    done; \
+    for plugin_dir in platforms imageformats iconengines styles sqldrivers bearer; do \
+        if [ -d "/usr/i686-w64-mingw32/lib/qt/plugins/${plugin_dir}" ]; then \
+            mkdir -p "${DEST}/plugins"; \
+            cp -a "/usr/i686-w64-mingw32/lib/qt/plugins/${plugin_dir}" "${DEST}/plugins/"; \
+        fi; \
+    done; \
+    echo "=== install layout ==="; \
+    find "${DEST}" -maxdepth 2 -type d | sort; \
+    echo "--- bin/ (head) ---"; \
+    ls "${DEST}/bin/" | head -30; \
+    echo "--- plugins/ ---"; \
+    find "${DEST}/plugins" -maxdepth 2 -type d | sort; \
+    test -f "${DEST}/lib/cmake/Core/CoreConfig.cmake" \
+        || { echo "FATAL: bundled CoreConfig.cmake missing" >&2; exit 1; }; \
+    test -f "${DEST}/bin/Qt5Core.dll" \
+        || { echo "FATAL: Qt5Core.dll missing" >&2; \
+             ls /usr/i686-w64-mingw32/bin/Qt5* >&2 || true; \
+             exit 1; }; \
+    test -f "${DEST}/plugins/platforms/qwindows.dll" \
+        || { echo "FATAL: qwindows.dll platform plugin missing" >&2; \
+             ls "${DEST}/plugins/platforms/" >&2 || true; exit 1; }
+
+# 3) Test-stage (нет wine в базовом образе; smoke пропускаем)
+FROM build AS test
+RUN set -eux; \
+    echo "=== SMOKE SKIPPED: win-qt5 cross-compile, no wine in base image ==="; \
+    V="$(tr -d '[:space:]' < /app/modbus-server/VERSION)"; \
+    test -f "${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}/bin/modbus-server.exe"; \
+    echo "=== install artifacts present ==="
+
+# 4) Export
+FROM scratch AS export
+ARG QT_VERSION_MAJOR=5
+ARG CORE_INSTALL_BASE=/opt/modbus-server
+COPY --from=build ${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/latest/ /
+
+FROM build AS final
