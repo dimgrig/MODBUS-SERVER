@@ -15,8 +15,9 @@ CORE_VERSION_MAJOR = $$section(CORE_SDK_VERSION, ., 0, 0)
 
 CORE_SDK_ROOT = $$(CORE_SDK_ROOT)
 isEmpty(CORE_SDK_ROOT) {
-    win32|win64: CORE_SDK_ROOT = $$(LOCALAPPDATA)/Core/latest
-    else:        CORE_SDK_ROOT = $$(HOME)/.local/core/latest
+    QT_MAJOR_VER = $$section(QT_VERSION, ., 0, 0)
+    win32|win64: CORE_SDK_ROOT = $$(LOCALAPPDATA)/Core/qt$${QT_MAJOR_VER}/latest
+    else:        CORE_SDK_ROOT = $$(HOME)/.local/core/qt$${QT_MAJOR_VER}/latest
 }
 
 # Опционально: скачать SDK, если ещё нет

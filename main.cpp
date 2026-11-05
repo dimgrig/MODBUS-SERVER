@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QStyleFactory>
+#include <QStyle>
 #include <QProcess>
 #include <QResource>
 #include <QScreen>
@@ -87,8 +88,11 @@ int main(int argc, char *argv[]) {
     splash.show();
     app.processEvents();
 
-    volatile bool log = cfg.LOG; //calls log_init();
-    Application::setStyle(QStyleFactory::create("qt5ct-style"));
+    if (QStyle* style = QStyleFactory::create("qt5ct-style")) {
+        Application::setStyle(style);
+    } else if (QStyle* fusion = QStyleFactory::create("Fusion")) {
+        Application::setStyle(fusion);
+    }
     //qDebug(logInfo()) << QStyleFactory::keys();
     app.setApplicationDisplayName(cfg.APPLICATION_NAME);
 

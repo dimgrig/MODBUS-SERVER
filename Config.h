@@ -17,10 +17,11 @@
 #include <core-lib/Logger.h>
 #include <core-modbus-lib/ModbusSettings.h>
 
+#undef  QT_HEX
 #ifdef QT_5_15
-    #define QT_HEX Qt::hex
+#define QT_HEX Qt::hex
 #else
-    #define QT_HEX ""
+#define QT_HEX ""
 #endif
 
 #define _US 1000000

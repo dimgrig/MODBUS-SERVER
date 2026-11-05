@@ -83,7 +83,7 @@ Config::Config() {
         config.endGroup();
     }
     else {
-        std::cout << "Config file does not exist";
+        std::cout << "Config file does not exist" << std::endl;
         //qCDebug(logFatal()) << "Config file does not exist";
     }
 

@@ -6,6 +6,7 @@
 
 #include <float.h>
 #include <locale.h>
+#include <climits>
 
 #include "Config.h"
 #include <core-lib/Random.h>
@@ -143,7 +144,7 @@ bool MainWindow::eventFilter(QObject *target, QEvent *event) {
 void MainWindow::connect_signal_slot() {
     connect(this->modbus_server, &ModbusServer::read_ready, this, &MainWindow::modbus_read);
 
-    connect(this->random_timer, &QTimer::timeout, this, &MainWindow::on_random_timer);
+    connect(this->random_timer, &QTimer::timeout, this, &MainWindow::update_random_registers);
     this->random_timer->start(1000);
 
 
@@ -298,11 +299,7 @@ void MainWindow::auth_ok() {
 
 }
 
-void MainWindow::on_timer() {
-
-}
-
-void MainWindow::on_random_timer() {
+void MainWindow::update_random_registers() {
     if (!this->ui->cb_random->isChecked()) return;
 
     const double sko = this->ui->dsb_sko->value();

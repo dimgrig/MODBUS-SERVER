@@ -74,8 +74,7 @@ private slots:
     void setDirty() { setWindowModified(true); }
 
     void auth_ok();
-    void on_timer();
-    void on_random_timer();
+    void update_random_registers();
     void modbus_read(int serverAddress, QString regName, QModbusDataUnit mdu);
 
     void DiscreteInputsChanged(bool value);
