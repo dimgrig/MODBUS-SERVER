@@ -73,19 +73,19 @@ RUN set -eux; \
     # ── Бандлим Core SDK целиком: include + libs + cmake-конфиги ──
     # install(TARGETS modbus-server RUNTIME DESTINATION bin) создаёт
     # только bin/ — lib/ и include/ добавляем руками.
-    mkdir -p "${DEST}/lib" "${DEST}/include"; \
-    cp -a "${CORE_SDK}/include/." "${DEST}/include/"; \
-    cp -a "${CORE_SDK}/lib/"libcore-*.so*        "${DEST}/lib/"; \
-    cp -a "${CORE_SDK}/lib/"libqcustomplot*.so*  "${DEST}/lib/" 2>/dev/null || true; \
-    cp -a "${CORE_SDK}/lib/"libQtWebApp*.so*     "${DEST}/lib/" 2>/dev/null || true; \
-    mkdir -p "${DEST}/lib/cmake"; \
-    cp -a "${CORE_SDK}/lib/cmake/."              "${DEST}/lib/cmake/"; \
+    mkdir -p "${DEST}/lib"; \
+    for lib in libcore-lib libcore-journal-lib libcore-modbus-lib libcore-widgets-lib; do \
+        cp -a "${CORE_SDK}/lib/${lib}.so"* "${DEST}/lib/"; \
+    done; \
     echo "=== install layout ==="; \
     find "${DEST}" -maxdepth 3 -type d | sort; \
     ls -la "${DEST}/bin/"; \
     ls "${DEST}/lib/" | head -20; \
-    test -f "${DEST}/lib/cmake/Core/CoreConfig.cmake" \
-        || { echo "FATAL: bundled CoreConfig.cmake missing" >&2; exit 1; }
+    for lib in libcore-lib libcore-journal-lib libcore-modbus-lib libcore-widgets-lib; do \
+        test -f "${DEST}/lib/${lib}.so.1" \
+            || { echo "FATAL: bundled ${lib}.so.1 missing" >&2; \
+                 ls "${DEST}/lib/" >&2; exit 1; }; \
+    done;
 
 # 3) Smoke-test (offscreen) — паритет с CI job
 FROM build AS test

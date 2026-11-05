@@ -140,15 +140,18 @@ esac
 
 # ── Flatten (если архив распаковался в подкаталог) ──────────────────────────
 if [ ! -f "$DEST/lib/cmake/Core/CoreConfig.cmake" ]; then
-    SUB="$(find "$DEST" -maxdepth 3 -name CoreConfig.cmake -path '*/cmake/Core/*' | head -1 || true)"
+    SUB="$(find "$DEST" -name CoreConfig.cmake -path '*/cmake/Core/*' 2>/dev/null | head -1 || true)"
     if [ -n "${SUB:-}" ]; then
-        SUBROOT="$(dirname "$(dirname "$(dirname "$SUB")")")"
-        if [ "$SUBROOT" != "$DEST" ]; then
+        # SUB = <root>/lib/cmake/Core/CoreConfig.cmake
+        # → <root> = 4× dirname (не 3: иначе SUBROOT = <root>/lib, и
+        #   flatten переносит только lib/, оставляя bin/ и include/ в <root>/).
+        SUBROOT="$(dirname "$(dirname "$(dirname "$(dirname "$SUB")")")")"
+        if [ "$SUBROOT" != "$DEST" ] && [ -d "$SUBROOT" ]; then
             echo "Flattening extracted dir ${SUBROOT} → ${DEST}"
             shopt -s dotglob
             mv "$SUBROOT"/* "$DEST"/ 2>/dev/null || true
-            rmdir "$SUBROOT" 2>/dev/null || true
             shopt -u dotglob
+            rm -rf "$SUBROOT"
         fi
     fi
 fi

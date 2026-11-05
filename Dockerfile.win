@@ -20,16 +20,12 @@ ARG CMAKE_CMD=i686-w64-mingw32-cmake
 ARG CORE_INSTALL_BASE=/opt/modbus-server
 ARG BUILD_TYPE=Release
 
-# 0) base-deps-win = Arch-based (mingw-w64); ensure unzip for fetch-core-sdk.sh
-#    Fallback в скрипте (bsdtar/python3) есть, но с unzip быстрее и нативнее.
+# 0) base-deps-win = Arch-based; unzip для fetch-core-sdk.sh (fallback есть)
 RUN set -eux; \
     if command -v unzip >/dev/null 2>&1; then \
         echo "unzip: already available"; \
     elif command -v pacman >/dev/null 2>&1; then \
-        pacman -Sy --noconfirm --needed unzip && \
-        echo "unzip: installed via pacman"; \
-    else \
-        echo "unzip: not installed — fetch-core-sdk.sh will use bsdtar/python3 fallback"; \
+        pacman -Sy --noconfirm --needed unzip && echo "unzip: via pacman"; \
     fi
 
 ENV CORE_SDK_PLATFORM=${CORE_SDK_PLATFORM} \
@@ -52,6 +48,7 @@ WORKDIR /app
 COPY . /app/modbus-server/
 WORKDIR /app/modbus-server
 
+# 2a) configure + build + install
 RUN set -eux; \
     V="$(tr -d '[:space:]' < VERSION)"; \
     echo "=== modbus-server v${V} (Qt${QT_VERSION_MAJOR} win32) ==="; \
@@ -67,65 +64,124 @@ RUN set -eux; \
     cmake --build build -j"$(nproc)"; \
     cmake --install build; \
     test -f "${DEST}/bin/modbus-server.exe" \
-        || { echo "FATAL: ${DEST}/bin/modbus-server.exe missing" >&2; \
-             find "${DEST}" -maxdepth 3 -type d 2>/dev/null >&2 || true; \
-             find "${DEST}" -maxdepth 3 -type f 2>/dev/null >&2 || true; \
-             exit 1; }; \
-    ln -sfn "${DEST}" "${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/latest"; \
-    mkdir -p "${DEST}/lib" "${DEST}/include" "${DEST}/bin"; \
-    cp -a "${CORE_SDK}/include/." "${DEST}/include/"; \
-    cp -a "${CORE_SDK}/lib/"libcore-*.dll.a       "${DEST}/lib/" 2>/dev/null || true; \
-    cp -a "${CORE_SDK}/lib/"libqcustomplot*.dll.a "${DEST}/lib/" 2>/dev/null || true; \
-    cp -a "${CORE_SDK}/lib/"libQtWebApp*.dll.a    "${DEST}/lib/" 2>/dev/null || true; \
-    cp -a "${CORE_SDK}/bin/"libcore-*.dll         "${DEST}/bin/" 2>/dev/null || true; \
-    cp -a "${CORE_SDK}/bin/"libqcustomplot*.dll   "${DEST}/bin/" 2>/dev/null || true; \
-    cp -a "${CORE_SDK}/bin/"libQtWebApp*.dll      "${DEST}/bin/" 2>/dev/null || true; \
-    mkdir -p "${DEST}/lib/cmake"; \
-    cp -a "${CORE_SDK}/lib/cmake/." "${DEST}/lib/cmake/"; \
+        || { echo "FATAL: modbus-server.exe missing" >&2; exit 1; }; \
+    ln -sfn "${DEST}" "${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/latest"
+
+# 2b) Core DLLs — только те, с которыми линкуется exe (4 файла)
+RUN set -eux; \
+    V="$(tr -d '[:space:]' < VERSION)"; \
+    DEST="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
+    CORE_SDK="/opt/core/qt${QT_VERSION_MAJOR}/latest"; \
+    mkdir -p "${DEST}/bin"; \
+    for lib in libcore-lib libcore-journal-lib libcore-modbus-lib libcore-widgets-lib; do \
+        cp -a "${CORE_SDK}/bin/${lib}.dll" "${DEST}/bin/"; \
+    done
+
+# 2c) Qt5 runtime DLLs
+RUN set -eux; \
+    V="$(tr -d '[:space:]' < VERSION)"; \
+    DEST="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
     cp -a /usr/i686-w64-mingw32/bin/Qt5*.dll          "${DEST}/bin/" 2>/dev/null || true; \
     cp -a /usr/i686-w64-mingw32/bin/libssl*.dll       "${DEST}/bin/" 2>/dev/null || true; \
     cp -a /usr/i686-w64-mingw32/bin/libcrypto*.dll    "${DEST}/bin/" 2>/dev/null || true; \
-    cp -a /usr/i686-w64-mingw32/bin/libzstd*.dll      "${DEST}/bin/" 2>/dev/null || true; \
-    for dll in libstdc++-6.dll libgcc_s_dw2-1.dll libwinpthread-1.dll libssp-0.dll; do \
-        found="$(find /usr/i686-w64-mingw32/bin /usr/lib/gcc/i686-w64-mingw32 \
-                       -name "$dll" -type f 2>/dev/null | head -1)"; \
-        if [ -n "$found" ]; then \
-            cp -a "$found" "${DEST}/bin/"; \
-        else \
-            echo "WARN: $dll not found (may be not required)" >&2; \
-        fi; \
+    cp -a /usr/i686-w64-mingw32/bin/libzstd*.dll      "${DEST}/bin/" 2>/dev/null || true
+
+# 2d.1) Транзитивные зависимости Qt5 и Core: рекурсивный обход objdump -p.
+#       libiconv-2 / libpcre2-16-0 / libharfbuzz-0 / libpng16-16 / zlib1
+#       и т.п. — это зависимости Qt5Gui.dll / Qt5Core.dll, которые
+#       не попадают в бандл при копировании только Qt5*.dll.
+#       Берём всё, что реально требуется exe и уже скопированным DLL,
+#       из sysroot i686-w64-mingw32 (только 32-бит, pei-i386).
+RUN set -eux; \
+    V="$(tr -d '[:space:]' < VERSION)"; \
+    DEST="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
+    SYSROOT="/usr/i686-w64-mingw32"; \
+    declare -A seen; \
+    queue=("${DEST}/bin/modbus-client.exe"); \
+    # Добавляем в очередь все уже скопированные DLL (Qt5, core, mingw runtime)
+    for f in "${DEST}"/bin/*.dll; do [ -f "$f" ] && queue+=("$f"); done; \
+    while [ ${#queue[@]} -gt 0 ]; do \
+        f="${queue[0]}"; queue=("${queue[@]:1}"); \
+        base="$(basename "$f")"; \
+        [ -n "${seen[$base]:-}" ] && continue; \
+        seen[$base]=1; \
+        # Извлекаем имена DLL из PE-заголовка
+        deps="$(i686-w64-mingw32-objdump -p "$f" 2>/dev/null | awk '/DLL Name:/{print $3}')"; \
+        for dep in $deps; do \
+            [ -n "${seen[$dep]:-}" ] && continue; \
+            # Уже есть в бандле — просто добавляем в очередь для обхода
+            if [ -f "${DEST}/bin/$dep" ]; then \
+                queue+=("${DEST}/bin/$dep"); \
+                continue; \
+            fi; \
+            # Ищем в sysroot MinGW
+            src=""; \
+            for cand in \
+                "${SYSROOT}/bin/$dep" \
+                "${SYSROOT}/lib/$dep" \
+                "${SYSROOT}/lib/gcc/$dep"; do \
+                if [ -f "$cand" ]; then src="$cand"; break; fi; \
+            done; \
+            if [ -z "$src" ]; then \
+                # Системные DLL Windows (KERNEL32, USER32, …) — не наши, пропускаем
+                case "$dep" in \
+                    KERNEL32.dll|USER32.dll|GDI32.dll|ADVAPI32.dll|SHELL32.dll|ole32.dll|OLEAUT32.dll|WS2_32.dll|WINMM.dll|IMM32.dll|UxTheme.dll|dwmapi.dll|D3D11.dll|D3D9.dll|OPENGL32.dll|GLU32.dll|COMCTL32.dll|COMDLG32.dll|RPCRT4.dll|CRYPT32.dll|secur32.dll|bcrypt.dll|ncrypt.dll|IPHLPAPI.DLL|DNSAPI.dll|NETAPI32.dll|USERENV.dll|VERSION.dll|SHLWAPI.dll|MPR.dll|WINSPOOL.DRV|PSAPI.DLL|POWRPROF.dll|SETUPAPI.dll|CFGMGR32.dll|WTSAPI32.dll|MSVCRT.dll) \
+                        continue ;; \
+                esac; \
+                echo "NOTE: $dep (required by $base) not found in sysroot — likely system DLL" >&2; \
+                continue; \
+            fi; \
+            # Проверка разрядности перед копированием
+            if ! i686-w64-mingw32-objdump -f "$src" 2>/dev/null | grep -q 'pei-i386'; then \
+                echo "FATAL: $src is not 32-bit (pei-i386)" >&2; \
+                i686-w64-mingw32-objdump -f "$src" >&2; \
+                exit 1; \
+            fi; \
+            cp -a "$src" "${DEST}/bin/"; \
+            echo "Dep (32-bit): $dep  <-  $src"; \
+            queue+=("${DEST}/bin/$dep"); \
+        done; \
     done; \
+    echo "=== transitive deps collected: $(ls "${DEST}"/bin/*.dll | wc -l) DLLs ==="
+
+# 2e) Qt5 plugins — рядом с exe, в {DEST}/bin/<category>/
+RUN set -eux; \
+    V="$(tr -d '[:space:]' < VERSION)"; \
+    DEST="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
     for plugin_dir in platforms imageformats iconengines styles sqldrivers bearer; do \
         if [ -d "/usr/i686-w64-mingw32/lib/qt/plugins/${plugin_dir}" ]; then \
-            mkdir -p "${DEST}/plugins"; \
-            cp -a "/usr/i686-w64-mingw32/lib/qt/plugins/${plugin_dir}" "${DEST}/plugins/"; \
+            cp -a "/usr/i686-w64-mingw32/lib/qt/plugins/${plugin_dir}" "${DEST}/bin/"; \
         fi; \
-    done; \
+    done
+
+# 2f) Финальная проверка layout
+RUN set -eux; \
+    V="$(tr -d '[:space:]' < VERSION)"; \
+    DEST="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
     echo "=== install layout ==="; \
     find "${DEST}" -maxdepth 2 -type d | sort; \
     echo "--- bin/ (head) ---"; \
     ls "${DEST}/bin/" | head -30; \
-    echo "--- plugins/ ---"; \
-    find "${DEST}/plugins" -maxdepth 2 -type d | sort; \
-    test -f "${DEST}/lib/cmake/Core/CoreConfig.cmake" \
-        || { echo "FATAL: bundled CoreConfig.cmake missing" >&2; exit 1; }; \
+    echo "--- plugins (next to exe) ---"; \
+    for d in platforms imageformats iconengines styles sqldrivers bearer; do \
+        [ -d "${DEST}/bin/$d" ] && echo "  bin/$d/"; \
+    done; \
+    for lib in libcore-lib libcore-journal-lib libcore-modbus-lib libcore-widgets-lib; do \
+        test -f "${DEST}/bin/${lib}.dll" \
+            || { echo "FATAL: ${lib}.dll missing" >&2; ls "${DEST}/bin/" >&2; exit 1; }; \
+    done; \
     test -f "${DEST}/bin/Qt5Core.dll" \
-        || { echo "FATAL: Qt5Core.dll missing" >&2; \
-             ls /usr/i686-w64-mingw32/bin/Qt5* >&2 || true; \
-             exit 1; }; \
-    test -f "${DEST}/plugins/platforms/qwindows.dll" \
-        || { echo "FATAL: qwindows.dll platform plugin missing" >&2; \
-             ls "${DEST}/plugins/platforms/" >&2 || true; exit 1; }
+        || { echo "FATAL: Qt5Core.dll missing" >&2; exit 1; }; \
+    test -f "${DEST}/bin/platforms/qwindows.dll" \
+        || { echo "FATAL: platforms/qwindows.dll missing in bin/" >&2; \
+             ls "${DEST}/bin/platforms/" >&2 || true; exit 1; }; \
+    for dll in libgcc_s_dw2-1.dll libstdc++-6.dll libwinpthread-1.dll; do \
+        test -f "${DEST}/bin/$dll" \
+            || { echo "FATAL: mandatory $dll missing in bundle" >&2; exit 1; }; \
+    done; \
+    echo "=== OK: modbus-server win-qt5 bundle ready ==="
 
-# 3) Test-stage (нет wine в базовом образе; smoke пропускаем)
-FROM build AS test
-RUN set -eux; \
-    echo "=== SMOKE SKIPPED: win-qt5 cross-compile, no wine in base image ==="; \
-    V="$(tr -d '[:space:]' < /app/modbus-server/VERSION)"; \
-    test -f "${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}/bin/modbus-server.exe"; \
-    echo "=== install artifacts present ==="
-
-# 4) Export
+# 3) Export
 FROM scratch AS export
 ARG QT_VERSION_MAJOR=5
 ARG CORE_INSTALL_BASE=/opt/modbus-server

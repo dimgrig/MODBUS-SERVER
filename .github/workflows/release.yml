@@ -1,0 +1,264 @@
+name: Build and Release MODBUS-SERVER
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag (e.g., v1.0.0)'
+        required: true
+      core_sdk_version:
+        description: 'Core SDK version (e.g., 1.1.0)'
+        required: false
+        default: '1.1.0'
+      build_linux_qt5:
+        description: 'Also build Qt5 legacy (linux-qt5)'
+        type: boolean
+        default: false
+      build_win_qt5:
+        description: 'Also build Qt5 legacy (win-qt5)'
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  CORE_SDK_VERSION: ${{ inputs.core_sdk_version || vars.CORE_SDK_VERSION || '1.1.0' }}
+  CORE_BASE_DEPS_LINUX_QT6: ghcr.io/${{ github.repository_owner }}/core-base-deps-linux:qt6-bookworm
+  CORE_BASE_DEPS_WIN64_QT6: ghcr.io/${{ github.repository_owner }}/core-base-deps-win64:qt6-mingw
+  CORE_BASE_DEPS_LINUX_QT5: ghcr.io/${{ github.repository_owner }}/core-base-deps-linux:qt5-bookworm
+  CORE_BASE_DEPS_WIN_QT5:   ghcr.io/${{ github.repository_owner }}/core-base-deps-win:qt5-mingw
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify VERSION == tag
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          FILE_VER="$(tr -d '[:space:]' < VERSION)"
+          echo "tag=$TAG, VERSION=$FILE_VER"
+          if [ "v${FILE_VER}" != "${TAG}" ]; then
+            echo "ERROR: tag '${TAG}' does not match VERSION '${FILE_VER}'" >&2
+            exit 1
+          fi
+
+  # ─────────────────────────────────────────────
+  # PRIMARY Qt6 (always)
+  # ─────────────────────────────────────────────
+
+  build-linux-qt6:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & export (linux-qt6)
+        run: |
+          PLATFORMS="linux-qt6" \
+          OUT_DIR="$PWD/dist" \
+          CORE_SDK_VERSION="${{ env.CORE_SDK_VERSION }}" \
+          ./docker-ci-export-core.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdk-linux-qt6
+          path: dist/*.tar.gz
+
+  build-win-qt6:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & export (win-qt6)
+        run: |
+          PLATFORMS="win-qt6" \
+          OUT_DIR="$PWD/dist" \
+          CORE_SDK_VERSION="${{ env.CORE_SDK_VERSION }}" \
+          ./docker-ci-export-core.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdk-win-qt6
+          path: dist/*.zip
+
+  # ─────────────────────────────────────────────
+  # TESTS (Qt6, always)
+  # ─────────────────────────────────────────────
+  test-linux-qt6:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & run (linux-qt6 test)
+        run: |
+          docker buildx build \
+            --target test \
+            --build-arg BASE_DEPS_IMAGE=${{ env.CORE_BASE_DEPS_LINUX_QT6 }} \
+            --build-arg CMAKE_CMD=cmake \
+            --build-arg QT_VERSION_MAJOR=6 \
+            --build-arg QT6_INSTALL_PREFIX=/opt/Qt/6.8.0/gcc_64 \
+            --build-arg CORE_SDK_VERSION=${{ env.CORE_SDK_VERSION }} \
+            --cache-from type=gha,scope=modbus-server-linux-qt6 \
+            --cache-from type=gha,scope=modbus-server-tests-qt6 \
+            --cache-to   type=gha,mode=max,scope=modbus-server-tests-qt6 \
+            -f Dockerfile.linux-qt6 .
+
+  # ─────────────────────────────────────────────
+  # Qt5 legacy (opt-in)
+  # ─────────────────────────────────────────────
+
+  build-linux-qt5:
+    if: github.event.inputs.build_linux_qt5 == 'true'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & export (linux-qt5)
+        run: |
+          PLATFORMS="linux-qt5" \
+          OUT_DIR="$PWD/dist" \
+          CORE_SDK_VERSION="${{ env.CORE_SDK_VERSION }}" \
+          ./docker-ci-export-core.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdk-linux-qt5
+          path: dist/*.tar.gz
+
+  build-win-qt5:
+    if: github.event.inputs.build_win_qt5 == 'true'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & export (win-qt5)
+        run: |
+          PLATFORMS="win-qt5" \
+          OUT_DIR="$PWD/dist" \
+          CORE_SDK_VERSION="${{ env.CORE_SDK_VERSION }}" \
+          ./docker-ci-export-core.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdk-win-qt5
+          path: dist/*.zip
+
+  # ─────────────────────────────────────────────
+  # PUBLISH
+  # ─────────────────────────────────────────────
+  publish:
+    needs:
+      - build-linux-qt6
+      - build-win-qt6
+      - test-linux-qt6
+      - build-linux-qt5
+      - build-win-qt5
+    if: |
+      !cancelled() &&
+      needs.build-linux-qt6.result == 'success' &&
+      needs.build-win-qt6.result   == 'success' &&
+      needs.test-linux-qt6.result  == 'success' &&
+      (needs.build-linux-qt5.result == 'success' || needs.build-linux-qt5.result == 'skipped') &&
+      (needs.build-win-qt5.result   == 'success' || needs.build-win-qt5.result   == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p release
+          find dist -type f \( -name '*.tar.gz' -o -name '*.zip' \) -exec cp {} release/ \;
+          ls -la release/
+
+      - name: SHA256SUMS
+        run: |
+          cd release
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: MODBUS-SERVER ${{ steps.tag.outputs.tag }}
+          body: |
+            ## MODBUS-SERVER
+
+            **Primary: Qt6.8.**
+            Qt5.15 — legacy, собирается только с `build_*_qt5=true`.
+
+            ### Artifacts (Qt6)
+            - `modbus-server-*-linux-qt6.tar.gz` — Linux x86_64, Qt6.8
+            - `modbus-server-*-win-qt6.zip`      — Windows x64 (MinGW), Qt6.8
+
+            ### Artifacts (Qt5)
+            - `modbus-server-*-linux-qt5.tar.gz` — Linux x86_64, Qt5
+            - `modbus-server-*-win-qt5.zip`      — Windows x32 (MinGW), Qt5
+
+            ### Contents
+            - `bin/modbus-server` — исполняемый файл (+ `plugins/` на Windows)
+            - `lib/` — только те `core-*`, с которыми линкуется приложение (4 файла)
+
+            SDK для разработки против Core — отдельно: `dimgrig/Core` releases.
+          files: |
+            release/*.tar.gz
+            release/*.zip
+            release/SHA256SUMS
+          fail_on_unmatched_files: true
+          draft: false
+          prerelease: false

@@ -26,7 +26,7 @@ ENV CORE_SDK_PLATFORM=${CORE_SDK_PLATFORM} \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
-# 1) Core SDK: win64 .zip → unzip/7z/bsdtar/python3
+# ── 1) Core SDK ────────────────────────────────────────────────────────────
 COPY scripts/fetch-core-sdk.sh /usr/local/bin/fetch-core-sdk.sh
 RUN chmod +x /usr/local/bin/fetch-core-sdk.sh && \
     fetch-core-sdk.sh "${CORE_SDK_VERSION}" "${CORE_SDK_URL}" \
@@ -37,11 +37,12 @@ RUN chmod +x /usr/local/bin/fetch-core-sdk.sh && \
     test -f "/opt/core/qt${QT_VERSION_MAJOR}/latest/lib/cmake/Core/CoreConfig.cmake" && \
     echo "=== Core SDK win64 / Qt${QT_VERSION_MAJOR} ready ==="
 
-# 2) Сборка modbus-server (кросс)
+# ── 2) Сборка modbus-server (кросс) ────────────────────────────────────────
 WORKDIR /app
 COPY . /app/modbus-server/
 WORKDIR /app/modbus-server
 
+# 2a) configure + build + install
 RUN set -eux; \
     V="$(tr -d '[:space:]' < VERSION)"; \
     echo "=== modbus-server v${V} (Qt${QT_VERSION_MAJOR} win64) ==="; \
@@ -59,55 +60,105 @@ RUN set -eux; \
     cmake --build build -j"$(nproc)"; \
     cmake --install build; \
     test -f "${DEST}/bin/modbus-server.exe" \
-        || { echo "FATAL: ${DEST}/bin/modbus-server.exe missing" >&2; \
-             find "${DEST}" -maxdepth 3 -type d 2>/dev/null >&2 || true; \
-             find "${DEST}" -maxdepth 3 -type f 2>/dev/null >&2 || true; \
-             exit 1; }; \
-    ln -sfn "${DEST}" "${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/latest"; \
-    mkdir -p "${DEST}/lib" "${DEST}/include" "${DEST}/bin"; \
-    cp -a "${CORE_SDK}/include/." "${DEST}/include/"; \
-    cp -a "${CORE_SDK}/lib/"libcore-*.dll.a       "${DEST}/lib/" 2>/dev/null || true; \
-    cp -a "${CORE_SDK}/lib/"libqcustomplot*.dll.a "${DEST}/lib/" 2>/dev/null || true; \
-    cp -a "${CORE_SDK}/lib/"libQtWebApp*.dll.a    "${DEST}/lib/" 2>/dev/null || true; \
-    cp -a "${CORE_SDK}/bin/"libcore-*.dll         "${DEST}/bin/" 2>/dev/null || true; \
-    cp -a "${CORE_SDK}/bin/"libqcustomplot*.dll   "${DEST}/bin/" 2>/dev/null || true; \
-    cp -a "${CORE_SDK}/bin/"libQtWebApp*.dll      "${DEST}/bin/" 2>/dev/null || true; \
-    mkdir -p "${DEST}/lib/cmake"; \
-    cp -a "${CORE_SDK}/lib/cmake/." "${DEST}/lib/cmake/"; \
+        || { echo "FATAL: modbus-server.exe missing" >&2; exit 1; }; \
+    ln -sfn "${DEST}" "${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/latest"
+
+# 2b) Core DLLs — только те, с которыми линкуется exe
+RUN set -eux; \
+    V="$(tr -d '[:space:]' < VERSION)"; \
+    DEST="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
+    CORE_SDK="/opt/core/qt${QT_VERSION_MAJOR}/latest"; \
+    mkdir -p "${DEST}/bin"; \
+    for lib in libcore-lib libcore-journal-lib libcore-modbus-lib libcore-widgets-lib; do \
+        cp -a "${CORE_SDK}/bin/${lib}.dll" "${DEST}/bin/"; \
+    done; \
+    echo "Core DLLs copied to ${DEST}/bin/"
+
+# 2c) Qt6 DLLs (все, что есть в prefix — урезание будет на этапе 2.12)
+RUN set -eux; \
+    V="$(tr -d '[:space:]' < VERSION)"; \
+    DEST="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
     cp -a "${QT6_INSTALL_PREFIX}/bin/"Qt6*.dll        "${DEST}/bin/"; \
     cp -a "${QT6_INSTALL_PREFIX}/bin/"libssl*.dll     "${DEST}/bin/" 2>/dev/null || true; \
     cp -a "${QT6_INSTALL_PREFIX}/bin/"libcrypto*.dll  "${DEST}/bin/" 2>/dev/null || true; \
     cp -a "${QT6_INSTALL_PREFIX}/bin/"libzstd*.dll    "${DEST}/bin/" 2>/dev/null || true; \
-    for dll in libstdc++-6.dll libgcc_s_seh-1.dll libwinpthread-1.dll libssp-0.dll; do \
-        found="$(find /usr/x86_64-w64-mingw32/bin /usr/lib/gcc/x86_64-w64-mingw32 \
-                       -name "$dll" -type f 2>/dev/null | head -1)"; \
-        if [ -n "$found" ]; then \
-            cp -a "$found" "${DEST}/bin/"; \
-        else \
-            echo "WARN: $dll not found (may be not required)" >&2; \
+    echo "Qt6 DLLs copied to ${DEST}/bin/"
+
+# 2d) MinGW runtime (64-bit): обязательный набор.
+#     libwinpthread-1.dll ранее пропускалась из-за find|head-1 → 0xc000007b.
+#     Явные пути + проверка pei-x86-64 перед копированием.
+RUN set -eux; \
+    V="$(tr -d '[:space:]' < VERSION)"; \
+    DEST="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
+    for dll in libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll libssp-0.dll libatomic-1.dll; do \
+        src=""; \
+        for cand in \
+            "/usr/lib/gcc/x86_64-w64-mingw32/13-posix/$dll" \
+            "/usr/lib/gcc/x86_64-w64-mingw32/12-posix/$dll" \
+            "/usr/lib/gcc/x86_64-w64-mingw32/13-win32/$dll" \
+            "/usr/lib/gcc/x86_64-w64-mingw32/12-win32/$dll" \
+            "/usr/x86_64-w64-mingw32/bin/$dll" \
+            "/usr/x86_64-w64-mingw32/lib/$dll" \
+            "/usr/x86_64-w64-mingw32/lib64/$dll"; do \
+            if [ -f "$cand" ]; then src="$cand"; break; fi; \
+        done; \
+        if [ -z "$src" ]; then \
+            if [ "$dll" = "libatomic-1.dll" ]; then \
+                echo "NOTE: $dll not found (optional)"; \
+                continue; \
+            fi; \
+            echo "FATAL: 64-bit $dll not found" >&2; \
+            exit 1; \
         fi; \
-    done; \
+        if ! x86_64-w64-mingw32-objdump -f "$src" 2>/dev/null | grep -q 'pei-x86-64'; then \
+            echo "FATAL: $src is not 64-bit (pei-x86-64)" >&2; \
+            x86_64-w64-mingw32-objdump -f "$src" >&2; \
+            exit 1; \
+        fi; \
+        cp -a "$src" "${DEST}/bin/"; \
+        echo "MinGW runtime (64-bit): $src"; \
+    done
+
+# 2e) Qt6 plugins — рядом с exe, в {DEST}/bin/<category>/
+#     Qt ищет плагины в <app_dir>/<category>/ (дефолт windeployqt);
+#     <app_dir> = {DEST}/bin (там exe), а не {DEST}.
+RUN set -eux; \
+    V="$(tr -d '[:space:]' < VERSION)"; \
+    DEST="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
     for plugin_dir in platforms imageformats iconengines styles sqldrivers tls bearer; do \
         if [ -d "${QT6_INSTALL_PREFIX}/plugins/${plugin_dir}" ]; then \
-            mkdir -p "${DEST}/plugins"; \
-            cp -a "${QT6_INSTALL_PREFIX}/plugins/${plugin_dir}" "${DEST}/plugins/"; \
+            cp -a "${QT6_INSTALL_PREFIX}/plugins/${plugin_dir}" "${DEST}/bin/"; \
         fi; \
-    done; \
+    done
+
+# 2f) Финальная проверка layout
+RUN set -eux; \
+    V="$(tr -d '[:space:]' < VERSION)"; \
+    DEST="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
     echo "=== install layout ==="; \
     find "${DEST}" -maxdepth 2 -type d | sort; \
     echo "--- bin/ (head) ---"; \
     ls "${DEST}/bin/" | head -30; \
-    echo "--- plugins/ ---"; \
-    find "${DEST}/plugins" -maxdepth 2 -type d | sort; \
-    test -f "${DEST}/lib/cmake/Core/CoreConfig.cmake" \
-        || { echo "FATAL: bundled CoreConfig.cmake missing" >&2; exit 1; }; \
+    echo "--- plugins (next to exe) ---"; \
+    for d in platforms imageformats iconengines styles sqldrivers tls bearer; do \
+        [ -d "${DEST}/bin/$d" ] && echo "  bin/$d/"; \
+    done; \
+    for lib in libcore-lib libcore-journal-lib libcore-modbus-lib libcore-widgets-lib; do \
+        test -f "${DEST}/bin/${lib}.dll" \
+            || { echo "FATAL: ${lib}.dll missing" >&2; ls "${DEST}/bin/" >&2; exit 1; }; \
+    done; \
     test -f "${DEST}/bin/Qt6Core.dll" \
         || { echo "FATAL: Qt6Core.dll missing" >&2; exit 1; }; \
-    test -f "${DEST}/plugins/platforms/qwindows.dll" \
-        || { echo "FATAL: qwindows.dll platform plugin missing" >&2; \
-             ls "${DEST}/plugins/platforms/" >&2 || true; exit 1; }
+    test -f "${DEST}/bin/platforms/qwindows.dll" \
+        || { echo "FATAL: platforms/qwindows.dll missing in bin/" >&2; \
+             ls "${DEST}/bin/platforms/" >&2 || true; exit 1; }; \
+    for dll in libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll; do \
+        test -f "${DEST}/bin/$dll" \
+            || { echo "FATAL: mandatory $dll missing in bundle" >&2; exit 1; }; \
+    done; \
+    echo "=== OK: modbus-server win-qt6 bundle ready ==="
 
-# 3) Export
+# ── 3) Export ──────────────────────────────────────────────────────────────
 FROM scratch AS export
 ARG QT_VERSION_MAJOR=6
 ARG CORE_INSTALL_BASE=/opt/modbus-server
