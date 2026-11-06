@@ -82,3 +82,6 @@ win32|win64 {
         }
     }
 }
+
+# ── appinfo.env (паритет с CMake core_write_appinfo) ───────────
+include(qmake-appinfo.pri)

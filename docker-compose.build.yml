@@ -1,0 +1,57 @@
+services:
+  modbus-server-linux-qt6:
+    build:
+      context: .
+      dockerfile: Dockerfile.linux
+      args:
+        BASE_DEPS_IMAGE: base-deps-linux-qt6:latest
+        CORE_SDK_VERSION: "${CORE_SDK_VERSION:-1.1.0}"
+        CORE_SDK_URL: "${CORE_SDK_URL:-}"
+        QT_VERSION_MAJOR: "6"
+        QT6_INSTALL_PREFIX: "/opt/Qt/6.8.0/gcc_64"
+        CORE_INSTALL_BASE: /opt/modbus-server
+    image: modbus-server-builder-linux-qt6:latest
+
+  modbus-server-linux-qt5:
+    build:
+      context: .
+      dockerfile: Dockerfile.linux
+      args:
+        BASE_DEPS_IMAGE: base-deps-linux:latest
+        CORE_SDK_VERSION: "${CORE_SDK_VERSION:-1.1.0}"
+        CORE_SDK_URL: "${CORE_SDK_URL:-}"
+        QT_VERSION_MAJOR: "5"
+        CORE_INSTALL_BASE: /opt/modbus-server
+    image: modbus-server-builder-linux-qt5:latest
+
+  modbus-server-win64-qt6:
+    build:
+      context: .
+      dockerfile: Dockerfile.win
+      args:
+        BASE_DEPS_IMAGE: base-deps-win64-qt6:latest
+        CORE_SDK_VERSION: "${CORE_SDK_VERSION:-1.1.0}"
+        CORE_SDK_URL: "${CORE_SDK_URL:-}"
+        CORE_SDK_PLATFORM: win64
+        QT_VERSION_MAJOR: "6"
+        QT6_INSTALL_PREFIX: "/opt/Qt/6.8.0/mingw_64"
+        QT_HOST_PATH: "/opt/Qt/6.8.0/gcc_64"
+        CMAKE_TOOLCHAIN_FILE: "/opt/x86_64-w64-mingw32.cmake"
+        CORE_INSTALL_BASE: /opt/modbus-server
+        INNOSETUP_IMAGE: "${INNOSETUP_IMAGE:-ghcr.io/dimgrig/innosetup-base:latest}"
+    image: modbus-server-builder-win64-qt6:latest
+
+  modbus-server-win-qt5:
+    build:
+      context: .
+      dockerfile: Dockerfile.win
+      args:
+        BASE_DEPS_IMAGE: base-deps-win:latest
+        CORE_SDK_VERSION: "${CORE_SDK_VERSION:-1.1.0}"
+        CORE_SDK_URL: "${CORE_SDK_URL:-}"
+        CORE_SDK_PLATFORM: win32
+        QT_VERSION_MAJOR: "5"
+        CMAKE_CMD: i686-w64-mingw32-cmake
+        CORE_INSTALL_BASE: /opt/modbus-server
+        INNOSETUP_IMAGE: "${INNOSETUP_IMAGE:-ghcr.io/dimgrig/innosetup-base:latest}"
+    image: modbus-server-builder-win-qt5:latest

@@ -52,6 +52,6 @@ compile_commands.json
 # QtCreator local machine specific files for imported projects
 *creator.user*
 
-!docker-build*
+!docker*build*
 !*build*pri
 !/scripts/*
