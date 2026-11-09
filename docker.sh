@@ -36,12 +36,16 @@
 #   CORE_BASE_DEPS_LINUX_QT5      — default: base-deps-linux:latest
 #   CORE_BASE_DEPS_WIN64_QT6      — default: base-deps-win64-qt6:latest
 #   CORE_BASE_DEPS_WIN_QT5        — default: base-deps-win:latest
+#   CORE_SDK_SHA256               — override sha256 (single-platform;
+#                                    для multi-platform не задавать — берётся
+#                                    из SHA256SUMS per-platform)
+#   CORE_SDK_REPO                 — default: dimgrig/Core (используется в _core_sdk_sha)
 # ============================================================================
 set -euo pipefail
 
 APP_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-usage() { sed -n '3,42p' "$0"; exit "${1:-0}"; }
+usage() { sed -n '3,46p' "$0"; exit "${1:-0}"; }
 die()   { echo "ERROR: $*" >&2; exit 1; }
 
 # ── общий детектор ────────────────────────────────────────────────────────
@@ -69,6 +73,22 @@ _core_sdk_version() {
     echo "1.1.0"
 }
 
+_core_sdk_sha() {
+    local platform="$1" qt="$2" ver="$3"
+    local ext art repo sha
+    case "$platform" in
+        win32|win64) ext="zip" ;;
+        *)           ext="tar.gz" ;;
+    esac
+    repo="${CORE_SDK_REPO:-dimgrig/Core}"
+    art="Core-Releases-${ver}-${platform}-qt${qt}.${ext}"
+    if ! command -v curl >/dev/null 2>&1; then echo ""; return 0; fi
+    sha="$(curl -fsSL --connect-timeout 15 --max-time 30 \
+        "https://github.com/${repo}/releases/download/v${ver}/SHA256SUMS" 2>/dev/null \
+        | awk -v f="$art" '$2 == f || $2 == "*"f {print $1; exit}')" || true
+    echo "${sha:-}"
+}
+
 # ── platform → pkg_suffix|out_subdir|dockerfile|base_image|buildx_plat|
 #              cmake_cmd|qt_major|qt6_prefix|toolchain|sdk_platform|
 #              mingw_triplet|mingw_pei|mingw_gcc_suffix ──
@@ -94,6 +114,13 @@ _cmd_build() {
     _base_deps_env
     export CORE_SDK_VERSION="$(_core_sdk_version)"
     export CORE_SDK_URL="${CORE_SDK_URL:-}"
+    if [ -z "${CORE_SDK_URL:-}" ]; then
+        local v="$CORE_SDK_VERSION"
+        export CORE_SDK_SHA256_LINUX_QT6="$(_core_sdk_sha linux-amd64 6 "$v")"
+        export CORE_SDK_SHA256_LINUX_QT5="$(_core_sdk_sha linux-amd64 5 "$v")"
+        export CORE_SDK_SHA256_WIN64_QT6="$(_core_sdk_sha win64       6 "$v")"
+        export CORE_SDK_SHA256_WIN_QT5="$(_core_sdk_sha   win32       5 "$v")"
+    fi
     docker compose -f docker-compose.build.yml build "$@"
 }
 
@@ -118,10 +145,6 @@ _cmd_export() {
     local sdk_ver; sdk_ver="$(_core_sdk_version)"
     echo "=== Core SDK version: ${sdk_ver} (fetch from GitHub releases; local Core is NOT built) ==="
 
-    if [ "$CLEAN" = "1" ]; then
-        echo "=== CLEAN=1 → rm -rf $OUT_DIR ==="
-        rm -rf "$OUT_DIR"
-    fi
     mkdir -p "$OUT_DIR"
 
     echo "=== ${APP_NAME} ${APP_VERSION} → ${OUT_DIR} ==="
@@ -161,9 +184,27 @@ _cmd_export() {
         IFS='|' read -r pkg_suffix out_subdir dockerfile base_img buildx_plat \
                         cmake_cmd qt_major qt6_prefix toolchain sdk_platform \
                         mingw_triplet mingw_pei mingw_gcc_suffix <<< "$conf"
-
+                        
         echo
         echo "--- ${plat} (→ ${out_subdir}/, ${dockerfile}) ---"
+
+        local core_sha=""
+        if [ -n "${CORE_SDK_SHA256:-}" ]; then
+            core_sha="$CORE_SDK_SHA256"
+        elif [ -z "${CORE_SDK_URL:-}" ]; then
+            core_sha="$(_core_sdk_sha "$sdk_platform" "$qt_major" "$sdk_ver")"
+        fi
+        if [ -n "$core_sha" ]; then
+            echo "    core-sdk sha256: ${core_sha}"
+        else
+            echo "    core-sdk sha256: <none> (cache-bust выключен; pass CORE_SDK_SHA256=… or bump CORE_SDK_VERSION)"
+        fi   
+
+        if [ "$CLEAN" = "1" ]; then
+            echo "=== CLEAN=1 → rm -rf $OUT_DIR/$out_subdir ==="
+            rm -rf "$OUT_DIR/$out_subdir"
+        fi
+        mkdir -p "$OUT_DIR/$out_subdir"
 
         # Build args: modbus-server зависит от Core как ВНЕШНЕГО артефакта.
         # CORE_SDK_URL="" → fetch-core-sdk.sh соберёт URL из версии/платформы.
@@ -173,6 +214,7 @@ _cmd_export() {
                       --build-arg "CORE_SDK_VERSION=${sdk_ver}"
                       --build-arg "CORE_SDK_URL=${CORE_SDK_URL:-}"
                       --build-arg "CORE_SDK_PLATFORM=${sdk_platform}"
+                      --build-arg "CORE_SDK_SHA256=${core_sha}"
                       # Всегда передаём — иначе Qt6-дефолты из Dockerfile.win
                       # протекают в Qt5-сборку.
                       --build-arg "QT6_INSTALL_PREFIX=${qt6_prefix:-}"
@@ -213,6 +255,12 @@ _cmd_export() {
 
     if [ -n "$DEPLOY_ROOT" ]; then
         mkdir -p "$DEPLOY_ROOT"
+        if [ -e "${DEPLOY_ROOT}/latest" ] && [ ! -L "${DEPLOY_ROOT}/latest" ]; then
+            local _bak="${DEPLOY_ROOT}/latest.bak.$(date +%Y%m%d-%H%M%S)"
+            echo "WARN: ${DEPLOY_ROOT}/latest is a real directory → moving to ${_bak}"
+            echo "      (old layout; safe to rm -rf after verify)"
+            mv "${DEPLOY_ROOT}/latest" "$_bak"
+        fi
         ln -sfn "$OUT_DIR" "${DEPLOY_ROOT}/latest"
         echo; echo "=== latest -> ${OUT_DIR} ==="
     fi
@@ -238,12 +286,20 @@ _cmd_test() {
             *) echo "NOTE: test supports only linux-qt5/linux-qt6, skipping '$plat'"; continue ;;
         esac
 
+        local core_sha=""
+        if [ -n "${CORE_SDK_SHA256:-}" ]; then
+            core_sha="$CORE_SDK_SHA256"
+        elif [ -z "${CORE_SDK_URL:-}" ]; then
+            core_sha="$(_core_sdk_sha linux-amd64 "$qt_major" "$sdk_ver")"
+        fi
+
         echo
         echo "--- test ${plat} (base: ${base_img}) ---"
         local targs=( --target test
                       --build-arg "BASE_DEPS_IMAGE=${base_img}"
                       --build-arg "CMAKE_CMD=cmake"
                       --build-arg "QT_VERSION_MAJOR=${qt_major}"
+                      --build-arg "CORE_SDK_SHA256=${core_sha}"
                       --build-arg "CORE_SDK_VERSION=${sdk_ver}" )
         if [ -n "${QT6_INSTALL_PREFIX:-}" ]; then
             targs+=( --build-arg "QT6_INSTALL_PREFIX=${QT6_INSTALL_PREFIX}" )

@@ -10,6 +10,7 @@ services:
         QT_VERSION_MAJOR: "6"
         QT6_INSTALL_PREFIX: "/opt/Qt/6.8.0/gcc_64"
         CORE_INSTALL_BASE: /opt/modbus-server
+        CORE_SDK_SHA256: "${CORE_SDK_SHA256_LINUX_QT6:-}"
     image: modbus-server-builder-linux-qt6:latest
 
   modbus-server-linux-qt5:
@@ -22,6 +23,7 @@ services:
         CORE_SDK_URL: "${CORE_SDK_URL:-}"
         QT_VERSION_MAJOR: "5"
         CORE_INSTALL_BASE: /opt/modbus-server
+        CORE_SDK_SHA256: "${CORE_SDK_SHA256_LINUX_QT5:-}"
     image: modbus-server-builder-linux-qt5:latest
 
   modbus-server-win64-qt6:
@@ -39,6 +41,7 @@ services:
         CMAKE_TOOLCHAIN_FILE: "/opt/x86_64-w64-mingw32.cmake"
         CORE_INSTALL_BASE: /opt/modbus-server
         INNOSETUP_IMAGE: "${INNOSETUP_IMAGE:-ghcr.io/dimgrig/innosetup-base:latest}"
+        CORE_SDK_SHA256: "${CORE_SDK_SHA256_WIN64_QT6:-}"
     image: modbus-server-builder-win64-qt6:latest
 
   modbus-server-win-qt5:
@@ -54,4 +57,5 @@ services:
         CMAKE_CMD: i686-w64-mingw32-cmake
         CORE_INSTALL_BASE: /opt/modbus-server
         INNOSETUP_IMAGE: "${INNOSETUP_IMAGE:-ghcr.io/dimgrig/innosetup-base:latest}"
+        CORE_SDK_SHA256: "${CORE_SDK_SHA256_WIN_QT5:-}"
     image: modbus-server-builder-win-qt5:latest

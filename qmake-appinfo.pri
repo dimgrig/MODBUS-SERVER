@@ -21,10 +21,8 @@ isEmpty(APPINFO_VERSION) {
 isEmpty(APPINFO_OUTPUT): APPINFO_OUTPUT = $$DESTDIR/appinfo.env
 
 # @PROJECT_VERSION@ → значение из VERSION.
-# Кавычки вокруг значений в шаблоне (APP_VERSION="@PROJECT_VERSION@")
-# сохраняются — `. appinfo.env` парсит их корректно.
-APPINFO_CMD = sed -e s#@PROJECT_VERSION@#$$APPINFO_VERSION#g \
-                  $$shell_path($$APPINFO_TEMPLATE) > $$shell_path($$APPINFO_OUTPUT)
+APPINFO_CMD  = sed -e "s%@PROJECT_VERSION@%$$APPINFO_VERSION%g"
+APPINFO_CMD += $$shell_path($$APPINFO_TEMPLATE) > $$shell_path($$APPINFO_OUTPUT)
 
 # Выполнять ПОСЛЕ создания DESTDIR (post_link гарантирует это).
 QMAKE_POST_LINK += $$escape_expand(\\n\\t) mkdir -p $$shell_path($$DESTDIR) && $$APPINFO_CMD

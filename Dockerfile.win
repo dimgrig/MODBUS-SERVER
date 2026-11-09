@@ -42,19 +42,23 @@ ARG MINGW_PEI=pei-x86-64
 ARG MINGW_GCC_SUFFIX=seh-1
 ARG CORE_INSTALL_BASE=/opt/modbus-server
 ARG BUILD_TYPE=Release
+ARG CORE_SDK_SHA256=
 
 ENV CORE_SDK_PLATFORM=${CORE_SDK_PLATFORM} \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
 COPY scripts/fetch-core-sdk.sh /usr/local/bin/fetch-core-sdk.sh
-RUN chmod +x /usr/local/bin/fetch-core-sdk.sh && \
+RUN echo "core-sdk: v${CORE_SDK_VERSION} sha=${CORE_SDK_SHA256}" && \
+    chmod +x /usr/local/bin/fetch-core-sdk.sh && \
     fetch-core-sdk.sh "${CORE_SDK_VERSION}" "${CORE_SDK_URL}" \
         "/opt/core/qt${QT_VERSION_MAJOR}/${CORE_SDK_VERSION}" \
         "${QT_VERSION_MAJOR}" && \
     ln -sfn "/opt/core/qt${QT_VERSION_MAJOR}/${CORE_SDK_VERSION}" \
             "/opt/core/qt${QT_VERSION_MAJOR}/latest" && \
-    test -f "/opt/core/qt${QT_VERSION_MAJOR}/latest/lib/cmake/Core/CoreConfig.cmake"
+    ln -sfn "/opt/core/qt${QT_VERSION_MAJOR}/latest" \
+            "/opt/core/latest" && \
+    test -f "/opt/core/latest/lib/cmake/Core/CoreConfig.cmake"
 
 WORKDIR /app
 COPY . /app/modbus-server/

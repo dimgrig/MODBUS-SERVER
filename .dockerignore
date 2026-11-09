@@ -19,7 +19,7 @@
 # infra (правка этих файлов не должна инвалидировать COPY)
 **/.dockerignore
 **/Dockerfile*
-**/docker-*.sh
+**/docker*.sh
 **/docker-compose.*.yml
 
 # qmake / cmake build artifacts

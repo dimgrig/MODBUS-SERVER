@@ -25,6 +25,7 @@ ARG QT6_INSTALL_PREFIX=/opt/Qt/6.8.0/gcc_64
 ARG CORE_INSTALL_BASE=/opt/modbus-server
 ARG CMAKE_TOOLCHAIN_FILE=
 ARG BUILD_TYPE=Release
+ARG CORE_SDK_SHA256=
 
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
@@ -32,13 +33,16 @@ ENV LANG=C.UTF-8 \
 
 # 1) Core SDK
 COPY scripts/fetch-core-sdk.sh /usr/local/bin/fetch-core-sdk.sh
-RUN chmod +x /usr/local/bin/fetch-core-sdk.sh && \
+RUN echo "core-sdk: v${CORE_SDK_VERSION} sha=${CORE_SDK_SHA256}" && \
+    chmod +x /usr/local/bin/fetch-core-sdk.sh && \
     fetch-core-sdk.sh "${CORE_SDK_VERSION}" "${CORE_SDK_URL}" \
         "/opt/core/qt${QT_VERSION_MAJOR}/${CORE_SDK_VERSION}" \
         "${QT_VERSION_MAJOR}" && \
     ln -sfn "/opt/core/qt${QT_VERSION_MAJOR}/${CORE_SDK_VERSION}" \
             "/opt/core/qt${QT_VERSION_MAJOR}/latest" && \
-    test -f "/opt/core/qt${QT_VERSION_MAJOR}/latest/lib/cmake/Core/CoreConfig.cmake"
+    ln -sfn "/opt/core/qt${QT_VERSION_MAJOR}/latest" \
+            "/opt/core/latest" && \
+    test -f "/opt/core/latest/lib/cmake/Core/CoreConfig.cmake"
 
 # 2) Сборка
 WORKDIR /app

@@ -84,9 +84,22 @@ trap 'rm -rf "$TMP"' EXIT
 _download() {
     local url="$1" out="$2"
     if command -v curl >/dev/null 2>&1; then
-        curl -fL --retry 3 --retry-delay 2 --connect-timeout 30 -o "$out" "$url"
+        # --retry-all-errors (curl 7.71+, bookworm = 7.88 ✓) ретраит
+        # на ЛЮБЫХ ошибках: connection reset, partial download, TLS abort —
+        # типичные для GitHub release throttling. Без этого флага curl
+        # игнорирует --retry для не-транзиентных (по его классификации)
+        # ошибок, и билд падает с exit code 4 / 18.
+        # --retry-max-time 600 — общий потолок на все попытки.
+        curl -fL \
+            --retry 5 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            --retry-max-time 600 \
+            --connect-timeout 30 \
+            --max-time 7200 \
+            -o "$out" "$url"
     elif command -v wget >/dev/null 2>&1; then
-        wget -q --tries=3 --timeout=60 -O "$out" "$url"
+        wget -q --tries=5 --timeout=60 --waitretry=5 -O "$out" "$url"
     else
         echo "ERROR: neither curl nor wget available" >&2
         return 1
@@ -97,19 +110,25 @@ echo "Downloading ${URL}"
 _download "$URL" "$TMP/$ART"
 
 # ── SHA256 (опционально) ────────────────────────────────────────────────────
-SHA_URL="https://github.com/${REPO}/releases/download/v${VERSION}/SHA256SUMS"
-if _download "$SHA_URL" "$TMP/SHA256SUMS" 2>/dev/null; then
-    EXPECTED="$(awk -v f="$ART" '$2 == f || $2 == "*"f {print $1; exit}' "$TMP/SHA256SUMS")"
-    if [ -n "${EXPECTED:-}" ]; then
-        ACTUAL="$(sha256sum "$TMP/$ART" | awk '{print $1}')"
-        if [ "$ACTUAL" != "$EXPECTED" ]; then
-            echo "ERROR: SHA256 mismatch for ${ART}" >&2
-            echo "  expected: ${EXPECTED}" >&2
-            echo "  actual:   ${ACTUAL}" >&2
-            exit 1
-        fi
-        echo "SHA256 OK"
+if [ -n "${CORE_SDK_SHA256:-}" ]; then
+    EXPECTED="$CORE_SDK_SHA256"
+else
+    SHA_URL="https://github.com/${REPO}/releases/download/v${VERSION}/SHA256SUMS"
+    if _download "$SHA_URL" "$TMP/SHA256SUMS" 2>/dev/null; then
+        EXPECTED="$(awk -v f="$ART" '$2 == f || $2 == "*"f {print $1; exit}' "$TMP/SHA256SUMS")"
+    else
+        EXPECTED=""
     fi
+fi
+if [ -n "${EXPECTED:-}" ]; then
+    ACTUAL="$(sha256sum "$TMP/$ART" | awk '{print $1}')"
+    if [ "$ACTUAL" != "$EXPECTED" ]; then
+        echo "ERROR: SHA256 mismatch for ${ART}" >&2
+        echo "  expected: ${EXPECTED}" >&2
+        echo "  actual:   ${ACTUAL}" >&2
+        exit 1
+    fi
+    echo "SHA256 OK"
 fi
 
 # ── Extract ─────────────────────────────────────────────────────────────────
