@@ -46,6 +46,7 @@
 #include <core-lib/Profiler.h>
 
 #include <core-modbus-lib/ModbusServer.h>
+#include <core-widgets-lib/ModbusSettingsUI.h>
 
 //using namespace std;
 

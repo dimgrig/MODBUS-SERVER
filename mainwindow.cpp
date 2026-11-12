@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QLineEdit>
 #include <QNetworkProxy>
 #include <QScrollArea>
 
