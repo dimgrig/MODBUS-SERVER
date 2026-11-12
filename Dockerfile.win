@@ -275,7 +275,7 @@ RUN ls -la /staging/
 
 # ── export ──
 FROM scratch AS export
-COPY --from=packager /staging/ModbusServerDistributionKit /ModbusServerDistributionKit
+###COPY --from=packager /staging/ModbusServerDistributionKit /ModbusServerDistributionKit
 COPY --from=packager /staging/*.exe /
 
 # ── final ──
