@@ -25,7 +25,7 @@
 #             -DMINGW_GCC_SUFFIX=seh-1
 # ============================================================================
 ARG BASE_DEPS_IMAGE=base-deps-win64-qt6:latest
-ARG INNOSETUP_IMAGE=innosetup-base:latest
+ARG INNOSETUP_IMAGE=ghcr.io/dimgrig/innosetup-base:latest
 
 FROM ${BASE_DEPS_IMAGE} AS build
 
@@ -48,7 +48,7 @@ ENV CORE_SDK_PLATFORM=${CORE_SDK_PLATFORM} \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
-COPY scripts/fetch-core-sdk.sh /usr/local/bin/fetch-core-sdk.sh
+COPY .ci/scripts/fetch-core-sdk.sh /usr/local/bin/fetch-core-sdk.sh
 RUN echo "core-sdk: v${CORE_SDK_VERSION} sha=${CORE_SDK_SHA256}" && \
     chmod +x /usr/local/bin/fetch-core-sdk.sh && \
     fetch-core-sdk.sh "${CORE_SDK_VERSION}" "${CORE_SDK_URL}" \

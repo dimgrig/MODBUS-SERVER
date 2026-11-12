@@ -32,7 +32,7 @@ ENV LANG=C.UTF-8 \
     QT_QPA_PLATFORM=offscreen
 
 # 1) Core SDK
-COPY scripts/fetch-core-sdk.sh /usr/local/bin/fetch-core-sdk.sh
+COPY .ci/scripts/fetch-core-sdk.sh /usr/local/bin/fetch-core-sdk.sh
 RUN echo "core-sdk: v${CORE_SDK_VERSION} sha=${CORE_SDK_SHA256}" && \
     chmod +x /usr/local/bin/fetch-core-sdk.sh && \
     fetch-core-sdk.sh "${CORE_SDK_VERSION}" "${CORE_SDK_URL}" \

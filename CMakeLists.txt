@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.18)
 
+# CoreCI: общие модули (FetchCoreSDK, AppInfo)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.ci/cmake")
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.ci/cmake")
+else()
+    message(FATAL_ERROR
+        "CoreCI submodule not initialized. "
+        "Run: git submodule update --init --recursive")
+endif()
+
 # ── Версия из VERSION ─────────────────────
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" _RAW_VER LIMIT_COUNT 1)
 string(STRIP "${_RAW_VER}" MODBUS_VERSION)
@@ -42,7 +51,7 @@ set(CORE_SDK_REPO    "dimgrig/Core" CACHE STRING "GitHub repo with Core releases
 
 # ── Резолвинг Core SDK (паритет с Saks/cmake/Paths.cmake) ───────
 if(CORE_SDK_FETCH)
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/FetchCoreSDK.cmake)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/.ci/cmake/FetchCoreSDK.cmake)
 elseif(NOT DEFINED Core_DIR)
     set(_core_sdk_candidates)
 

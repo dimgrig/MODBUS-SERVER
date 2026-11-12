@@ -48,9 +48,16 @@ APP_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 usage() { sed -n '3,46p' "$0"; exit "${1:-0}"; }
 die()   { echo "ERROR: $*" >&2; exit 1; }
 
+# ── CoreCI submodule guard ────────────────────────────────────────
+[ -f "$APP_ROOT/.ci/scripts/detect-export-mode.sh" ] || {
+    die "CoreCI submodule not initialized (or outdated — need v0.1.3+).
+  Run: git submodule update --init --recursive
+       (cd .ci && git checkout v0.1.3)"
+}
+
 # ── общий детектор ────────────────────────────────────────────────────────
 # shellcheck source=scripts/detect-export-mode.sh
-source "$APP_ROOT/scripts/detect-export-mode.sh"
+source "$APP_ROOT/.ci/scripts/detect-export-mode.sh"
 
 # ── base-deps env (defaults: latest) ───────────────────────────────────────
 _base_deps_env() {
@@ -323,16 +330,7 @@ _main() {
 
     local cmd="${1:-}"; shift || true
     case "$cmd" in
-        base)
-            if [ -x "$APP_ROOT/../Core/docker.sh" ]; then
-                bash "$APP_ROOT/../Core/docker.sh" base "$@"
-            else
-                echo "ERROR: ../Core/docker.sh not found." >&2
-                echo "  expected sibling repo: $(dirname "$APP_ROOT")/Core/docker.sh" >&2
-                echo "  In CI use prebuilt base-deps images (CORE_BASE_DEPS_*)." >&2
-                exit 1
-            fi
-            ;;
+        base)   bash "$APP_ROOT/.ci/scripts/build-base-deps.sh" "$@" ;;
         build)  _cmd_build "$@" ;;
         export) _cmd_export "$@" ;;
         test)   _cmd_test   "$@" ;;

@@ -6,6 +6,7 @@
 **/dist/
 
 # VCS / IDE
+**/.git
 **/.git/
 **/.github/
 **/.gitignore

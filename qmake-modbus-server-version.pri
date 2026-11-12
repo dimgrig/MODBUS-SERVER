@@ -23,8 +23,8 @@ isEmpty(CORE_SDK_ROOT) {
 # Опционально: скачать SDK, если ещё нет
 CONFIG(core_sdk_fetch) {
     !exists($${CORE_SDK_ROOT}/lib/cmake/Core/CoreConfig.cmake) {
-        win32|win64: FETCH = $$shell_path($$PWD/scripts/fetch-core-sdk.bat)
-        else:        FETCH = $$shell_path($$PWD/scripts/fetch-core-sdk.sh)
+        win32|win64: FETCH = $$shell_path($$PWD/.ci/scripts/fetch-core-sdk.bat)
+        else:        FETCH = $$shell_path($$PWD/.ci/scripts/fetch-core-sdk.sh)
         message(modbus-server: fetching Core SDK $${CORE_SDK_VERSION} → $${CORE_SDK_ROOT})
         system($$FETCH $${CORE_SDK_VERSION} $${CORE_SDK_ROOT})
     }

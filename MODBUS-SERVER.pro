@@ -7,13 +7,15 @@ CONFIG += c++17
 #QMAKE_CXXFLAGS += -Wno-deprecated #-std=c++2a
 
 DISTFILES += \
-    qmake-destination-path.pri \
-    qmake-modbus-server-version.pri \
-    qmake-target-platform.pri
+    qmake-modbus-server-version.pri 
 
-include(qmake-target-platform.pri)
+# CoreCI: общие .pri
+!exists($$PWD/.ci/qmake/qmake-target-platform.pri): \
+    error("CoreCI submodule not initialized at $$PWD/.ci — run: git submodule update --init --recursive")
+
+include(.ci/qmake/qmake-target-platform.pri)
 include(qmake-modbus-server-version.pri)
-include(qmake-destination-path.pri)
+include(.ci/qmake/qmake-destination-path.pri)
 
 INCLUDEPATH += "$$_PRO_FILE_PWD_/"
 INCLUDEPATH += "$${CORE_SDK_ROOT}/include"
@@ -84,4 +86,4 @@ win32|win64 {
 }
 
 # ── appinfo.env (паритет с CMake core_write_appinfo) ───────────
-include(qmake-appinfo.pri)
+include(.ci/qmake/qmake-appinfo.pri)
