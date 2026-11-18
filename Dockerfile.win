@@ -1,29 +1,4 @@
 # syntax=docker/dockerfile:1
-# ============================================================================
-# Dockerfile.win — modbus-server, Windows (MinGW cross)
-#
-#   build     — cmake + install
-#   deploy    — ModbusServerDistributionKit/ (portable win32 или win64)
-#   innosetup — modbus-server-<ver>-setup.exe
-#   packager  — DistributionKit + setup.exe
-#   export    — FROM scratch
-#   final     — FROM build
-#
-# Qt5 win32:  -DBASE_DEPS_IMAGE=base-deps-win:latest
-#             -DQT_VERSION_MAJOR=5 -DCORE_SDK_PLATFORM=win32
-#             -DCMAKE_CMD=i686-w64-mingw32-cmake
-#             -DCMAKE_TOOLCHAIN_FILE= -DQT6_INSTALL_PREFIX= -DQT_HOST_PATH=
-#             -DMINGW_TRIPLET=i686-w64-mingw32 -DMINGW_PEI=pei-i386
-#             -DMINGW_GCC_SUFFIX=dw2-1
-# Qt6 win64:  -DBASE_DEPS_IMAGE=base-deps-win64-qt6:latest
-#             -DQT_VERSION_MAJOR=6 -DCORE_SDK_PLATFORM=win64
-#             -DCMAKE_CMD=cmake
-#             -DCMAKE_TOOLCHAIN_FILE=/opt/x86_64-w64-mingw32.cmake
-#             -DQT6_INSTALL_PREFIX=/opt/Qt/6.8.0/mingw_64
-#             -DQT_HOST_PATH=/opt/Qt/6.8.0/gcc_64
-#             -DMINGW_TRIPLET=x86_64-w64-mingw32 -DMINGW_PEI=pei-x86-64
-#             -DMINGW_GCC_SUFFIX=seh-1
-# ============================================================================
 ARG BASE_DEPS_IMAGE=base-deps-win64-qt6:latest
 ARG INNOSETUP_IMAGE=ghcr.io/dimgrig/innosetup-base:latest
 
@@ -32,68 +7,36 @@ FROM ${BASE_DEPS_IMAGE} AS build
 ARG CORE_SDK_VERSION=1.1.0
 ARG CORE_SDK_URL=
 ARG CORE_SDK_PLATFORM=win64
+ARG CORE_SDK_SHA256=
 ARG QT_VERSION_MAJOR=6
-ARG QT6_INSTALL_PREFIX=
-ARG QT_HOST_PATH=
-ARG CMAKE_CMD=cmake
-ARG CMAKE_TOOLCHAIN_FILE=
-ARG MINGW_TRIPLET=x86_64-w64-mingw32
-ARG MINGW_PEI=pei-x86-64
-ARG MINGW_GCC_SUFFIX=seh-1
+ARG QT6_INSTALL_PREFIX=/opt/Qt/6.8.0/mingw_64
+ARG QT_HOST_PATH=/opt/Qt/6.8.0/gcc_64
+ARG CMAKE_TOOLCHAIN_FILE=/opt/x86_64-w64-mingw32.cmake
 ARG CORE_INSTALL_BASE=/opt/modbus-server
 ARG BUILD_TYPE=Release
-ARG CORE_SDK_SHA256=
 
-ENV CORE_SDK_PLATFORM=${CORE_SDK_PLATFORM} \
-    LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8
+ENV CORE_SDK_PLATFORM=${CORE_SDK_PLATFORM} LANG=C.UTF-8 LC_ALL=C.UTF-8
 
-COPY .ci/scripts/fetch-core-sdk.sh /usr/local/bin/fetch-core-sdk.sh
-RUN echo "core-sdk: v${CORE_SDK_VERSION} sha=${CORE_SDK_SHA256}" && \
-    chmod +x /usr/local/bin/fetch-core-sdk.sh && \
-    fetch-core-sdk.sh "${CORE_SDK_VERSION}" "${CORE_SDK_URL}" \
+COPY .ci/scripts/fetch-core-sdk.sh /opt/ci/fetch-core-sdk.sh
+COPY .ci/scripts/build-app.sh       /opt/ci/build-app.sh
+RUN chmod +x /opt/ci/*.sh && \
+    echo "core-sdk: v${CORE_SDK_VERSION} sha=${CORE_SDK_SHA256}" && \
+    /opt/ci/fetch-core-sdk.sh "${CORE_SDK_VERSION}" "${CORE_SDK_URL}" \
         "/opt/core/qt${QT_VERSION_MAJOR}/${CORE_SDK_VERSION}" \
         "${QT_VERSION_MAJOR}" && \
     ln -sfn "/opt/core/qt${QT_VERSION_MAJOR}/${CORE_SDK_VERSION}" \
             "/opt/core/qt${QT_VERSION_MAJOR}/latest" && \
-    ln -sfn "/opt/core/qt${QT_VERSION_MAJOR}/latest" \
-            "/opt/core/latest" && \
-    test -f "/opt/core/latest/lib/cmake/Core/CoreConfig.cmake"
+    ln -sfn "/opt/core/qt${QT_VERSION_MAJOR}/latest" "/opt/core/latest"
 
 WORKDIR /app
 COPY . /app/modbus-server/
 WORKDIR /app/modbus-server
 
-RUN set -eux; \
-    V="$(tr -d '[:space:]' < VERSION)"; \
-    DEST="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
-    CORE_SDK="/opt/core/qt${QT_VERSION_MAJOR}/latest"; \
-    mkdir -p "${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}"; \
-    EXTRA_ARGS=""; \
-    if [ -n "${CMAKE_TOOLCHAIN_FILE}" ]; then \
-        EXTRA_ARGS="${EXTRA_ARGS} -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"; \
-    fi; \
-    if [ -n "${QT_HOST_PATH}" ]; then \
-        EXTRA_ARGS="${EXTRA_ARGS} -DQT_HOST_PATH=${QT_HOST_PATH}"; \
-    fi; \
-    ${CMAKE_CMD} -S . -B build \
-        -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-        -DQT_VERSION_MAJOR="${QT_VERSION_MAJOR}" \
-        -DCore_DIR="${CORE_SDK}/lib/cmake/Core" \
-        -DCMAKE_INSTALL_PREFIX="${DEST}" \
-        -DMODBUS_SERVER_DEPLOY=OFF \
-        ${EXTRA_ARGS}; \
-    cmake --build build -j"$(nproc)"; \
-    cmake --install build; \
-    test -f "${DEST}/bin/modbus-server.exe"; \
-    test -f "${DEST}/appinfo.env"; \
-    ln -sfn "${DEST}" "${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/latest"
+ENV APP_NAME=modbus-server
+RUN /opt/ci/build-app.sh
 
-# ── deploy ──
 FROM build AS deploy
-
 SHELL ["/bin/bash", "-c"]
-
 ARG QT_VERSION_MAJOR
 ARG QT6_INSTALL_PREFIX
 ARG CORE_INSTALL_BASE
@@ -101,182 +44,46 @@ ARG MINGW_TRIPLET=x86_64-w64-mingw32
 ARG MINGW_PEI=pei-x86-64
 ARG MINGW_GCC_SUFFIX=seh-1
 
-RUN set -eux; \
-    V="$(tr -d '[:space:]' < /app/modbus-server/VERSION)"; \
-    SRC="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
-    CORE_SDK="/opt/core/qt${QT_VERSION_MAJOR}/latest"; \
-    DEPLOY=/deploy; \
-    mkdir -p "$DEPLOY"; \
-    cp "${SRC}/bin/modbus-server.exe" "$DEPLOY/"; \
-    cp "${SRC}/appinfo.env"           "$DEPLOY/"; \
-    . "$DEPLOY/appinfo.env"; \
-    DIST="${DEPLOY}/${DIST_KIT_NAME}"; \
-    mkdir -p "$DIST"; \
-    cp "${SRC}/bin/modbus-server.exe" "$DIST/"; \    
-    cp /app/modbus-server/resources/modbus.ico "$DIST/modbus.ico"; \
-    cp /app/modbus-server/deploy/config.ini "$DIST/config.ini"; \
-    for lib in libcore-lib libcore-journal-lib libcore-modbus-lib libcore-widgets-lib; do \
-        cp "${CORE_SDK}/bin/${lib}.dll" "$DIST/"; \
-    done; \
-    if [ "${QT_VERSION_MAJOR}" = "6" ]; then \
-        cp "${QT6_INSTALL_PREFIX}/bin/"Qt6*.dll "$DIST/"; \
-        cp "${QT6_INSTALL_PREFIX}/bin/"libssl*.dll    "$DIST/" 2>/dev/null || true; \
-        cp "${QT6_INSTALL_PREFIX}/bin/"libcrypto*.dll "$DIST/" 2>/dev/null || true; \
-        cp "${QT6_INSTALL_PREFIX}/bin/"libzstd*.dll   "$DIST/" 2>/dev/null || true; \
-        for plugin_dir in platforms imageformats iconengines styles sqldrivers tls bearer; do \
-            if [ -d "${QT6_INSTALL_PREFIX}/plugins/${plugin_dir}" ]; then \
-                cp -r "${QT6_INSTALL_PREFIX}/plugins/${plugin_dir}" "$DIST/"; \
-            fi; \
-        done; \
-        SYSROOT="/usr/${MINGW_TRIPLET}"; \
-    else \
-        cp /usr/i686-w64-mingw32/bin/Qt5*.dll "$DIST/" 2>/dev/null || true; \
-        for plugin_dir in platforms imageformats iconengines styles sqldrivers bearer; do \
-            if [ -d "/usr/i686-w64-mingw32/lib/qt/plugins/${plugin_dir}" ]; then \
-                cp -r "/usr/i686-w64-mingw32/lib/qt/plugins/${plugin_dir}" "$DIST/"; \
-            fi; \
-        done; \
-        SYSROOT="/usr/i686-w64-mingw32"; \
-    fi; \
-    # ── MinGW runtime (обязательный явный набор) ──
-    for dll in libstdc++-6.dll libwinpthread-1.dll; do \
-        src=""; \
-        for cand in \
-            "/usr/lib/gcc/${MINGW_TRIPLET}/13-posix/$dll" \
-            "/usr/lib/gcc/${MINGW_TRIPLET}/12-posix/$dll" \
-            "/usr/lib/gcc/${MINGW_TRIPLET}/13-win32/$dll" \
-            "/usr/lib/gcc/${MINGW_TRIPLET}/12-win32/$dll" \
-            "/usr/${MINGW_TRIPLET}/bin/$dll" \
-            "/usr/${MINGW_TRIPLET}/lib/$dll"; do \
-            if [ -f "$cand" ]; then src="$cand"; break; fi; \
-        done; \
-        test -n "$src" || { echo "FATAL: $dll not found" >&2; exit 1; }; \
-        if ! ${MINGW_TRIPLET}-objdump -f "$src" 2>/dev/null | grep -q "${MINGW_PEI}"; then \
-            echo "FATAL: $src is not ${MINGW_PEI}" >&2; exit 1; \
-        fi; \
-        cp -a "$src" "$DIST/"; \
-    done; \
-    libgcc_src=""; \
-    for cand in \
-        "/usr/lib/gcc/${MINGW_TRIPLET}/13-posix/libgcc_s_${MINGW_GCC_SUFFIX}.dll" \
-        "/usr/lib/gcc/${MINGW_TRIPLET}/12-posix/libgcc_s_${MINGW_GCC_SUFFIX}.dll" \
-        "/usr/lib/gcc/${MINGW_TRIPLET}/13-win32/libgcc_s_${MINGW_GCC_SUFFIX}.dll" \
-        "/usr/lib/gcc/${MINGW_TRIPLET}/12-win32/libgcc_s_${MINGW_GCC_SUFFIX}.dll" \
-        "/usr/${MINGW_TRIPLET}/bin/libgcc_s_${MINGW_GCC_SUFFIX}.dll"; do \
-        if [ -f "$cand" ]; then libgcc_src="$cand"; break; fi; \
-    done; \
-    test -n "$libgcc_src" || { echo "FATAL: libgcc_s_${MINGW_GCC_SUFFIX}.dll not found" >&2; exit 1; }; \
-    cp -a "$libgcc_src" "$DIST/"; \
-    # ────────────────────────────────────────────────────────────
-    # Транзитивные DLL: рекурсивный обход PE-заголовка exe и всех уже
-    # скопированных DLL. Копируем из sysroot (только этой платформы,
-    # проверка ${MINGW_PEI}). Пропускаем системные Windows DLL.
-    # Лечит: libiconv-2.dll, libpcre2-16-0.dll, zlib1.dll,
-    # libharfbuzz-0.dll, libfreetype-6.dll, libpng16-16.dll,
-    # libbz2-1.dll, libglib-2.0-0.dll, libintl-8.dll, libgraphite2.dll,
-    # libbrotli*.dll, libmd4c.dll, libdouble-conversion.dll и пр.
-    # ────────────────────────────────────────────────────────────
-    declare -A seen; \
-    queue=("${DIST}/modbus-server.exe"); \
-    for f in "${DIST}"/*.dll; do [ -f "$f" ] && queue+=("$f"); done; \
-    while [ ${#queue[@]} -gt 0 ]; do \
-        f="${queue[0]}"; queue=("${queue[@]:1}"); \
-        base="$(basename "$f")"; \
-        [ -n "${seen[$base]:-}" ] && continue; \
-        seen[$base]=1; \
-        deps="$(${MINGW_TRIPLET}-objdump -p "$f" 2>/dev/null | awk '/DLL Name:/{print $3}')"; \
-        for dep in $deps; do \
-            [ -n "${seen[$dep]:-}" ] && continue; \
-            if [ -f "${DIST}/$dep" ]; then \
-                queue+=("${DIST}/$dep"); \
-                continue; \
-            fi; \
-            src=""; \
-            for cand in \
-                "${SYSROOT}/bin/$dep" \
-                "${SYSROOT}/lib/$dep" \
-                "/usr/lib/gcc/${MINGW_TRIPLET}/13-posix/$dep" \
-                "/usr/lib/gcc/${MINGW_TRIPLET}/12-posix/$dep" \
-                "/usr/lib/gcc/${MINGW_TRIPLET}/13-win32/$dep" \
-                "/usr/lib/gcc/${MINGW_TRIPLET}/12-win32/$dep"; do \
-                if [ -f "$cand" ]; then src="$cand"; break; fi; \
-            done; \
-            if [ -z "$src" ]; then \
-                case "$dep" in \
-                    KERNEL32.dll|USER32.dll|GDI32.dll|ADVAPI32.dll|SHELL32.dll|ole32.dll|OLEAUT32.dll|WS2_32.dll|WINMM.dll|IMM32.dll|UxTheme.dll|dwmapi.dll|D3D11.dll|D3D9.dll|OPENGL32.dll|GLU32.dll|COMCTL32.dll|COMDLG32.dll|RPCRT4.dll|CRYPT32.dll|secur32.dll|bcrypt.dll|ncrypt.dll|IPHLPAPI.DLL|DNSAPI.dll|NETAPI32.dll|USERENV.dll|VERSION.dll|SHLWAPI.dll|MPR.dll|WINSPOOL.DRV|PSAPI.DLL|POWRPROF.dll|SETUPAPI.dll|CFGMGR32.dll|WTSAPI32.dll|MSVCRT.dll|api-ms-win-*.dll|ext-ms-*.dll) \
-                        continue ;; \
-                esac; \
-                echo "NOTE: $dep (required by $base) not found in sysroot — likely system DLL" >&2; \
-                continue; \
-            fi; \
-            if ! ${MINGW_TRIPLET}-objdump -f "$src" 2>/dev/null | grep -q "${MINGW_PEI}"; then \
-                echo "FATAL: $src is not ${MINGW_PEI}" >&2; \
-                ${MINGW_TRIPLET}-objdump -f "$src" >&2; \
-                exit 1; \
-            fi; \
-            cp -a "$src" "${DIST}/"; \
-            echo "Dep (${MINGW_TRIPLET}): $dep  <-  $src"; \
-            queue+=("${DIST}/$dep"); \
-        done; \
-    done; \
-    # ── sanity ──
-    test -f "$DIST/modbus-server.exe"; \
-    test -f "$DIST/modbus.ico" \
-        || { echo "FATAL: modbus.ico missing in DIST" >&2; exit 1; }; \
-    test -f "$DIST/config.ini" \
-        || { echo "FATAL: config.ini template missing" >&2; exit 1; }; \
-    test -f "$DIST/libcore-modbus-lib.dll"; \
-    test -f "$DIST/platforms/qwindows.dll"; \
-    test -f "$DIST/libwinpthread-1.dll"; \
-    if [ "${QT_VERSION_MAJOR}" = "6" ]; then \
-        test -f "$DIST/Qt6Core.dll" || { echo "FATAL: Qt6Core.dll missing" >&2; exit 1; }; \
-    else \
-        test -f "$DIST/Qt5Core.dll" || { echo "FATAL: Qt5Core.dll missing" >&2; exit 1; }; \
-        for need in libiconv-2.dll libpcre2-16-0.dll zlib1.dll libharfbuzz-0.dll; do \
-            if [ ! -f "$DIST/$need" ]; then \
-                echo "FATAL: $need still missing after transitive pass" >&2; \
-                echo "--- dist content ---" >&2; ls "$DIST" >&2; \
-                exit 1; \
-            fi; \
-        done; \
-    fi; \
-    echo "== ${DIST_KIT_NAME} (Qt${QT_VERSION_MAJOR}, ${MINGW_TRIPLET}): $(ls -1 "$DIST"/*.dll | wc -l) dll =="
+COPY .ci/scripts/deploy-windows.sh /opt/ci/deploy-windows.sh
+RUN chmod +x /opt/ci/deploy-windows.sh && \
+    V="$(tr -d '[:space:]' < VERSION)" && \
+    LOCAL_INSTALL="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}" \
+    APP_NAME_BIN="${APP_NAME}" \
+    DIST_NAME=ModbusServerDistributionKit \
+    DEPLOY_DIR=/deploy \
+    QT_VERSION_MAJOR="${QT_VERSION_MAJOR}" \
+    QT6_INSTALL_PREFIX="${QT6_INSTALL_PREFIX}" \
+    MINGW_TRIPLET="${MINGW_TRIPLET}" \
+    MINGW_PEI="${MINGW_PEI}" \
+    MINGW_GCC_SUFFIX="${MINGW_GCC_SUFFIX}" \
+    CORE_LIBS="libcore-lib libcore-journal-lib libcore-modbus-lib libcore-widgets-lib" \
+    ICON_SRC=/app/modbus-server/resources/modbus.ico \
+    CONFIG_INI=/app/modbus-server/deploy/config.ini \
+    /opt/ci/deploy-windows.sh
 
-# ── innosetup ──
+
 FROM ${INNOSETUP_IMAGE} AS innosetup
-
-COPY --from=deploy /deploy/ModbusServerDistributionKit /app/modbus-server/deploy/ModbusServerDistributionKit
-COPY --from=deploy /deploy/appinfo.env /app/modbus-server/deploy/appinfo.env
+COPY --from=deploy /deploy /app/modbus-server/deploy
 COPY setup /app/modbus-server/setup
 COPY resources/modbus.ico /app/modbus-server/setup/modbus.ico
 COPY VERSION /app/modbus-server/VERSION
+COPY .ci/scripts/make-innosetup.sh /opt/ci/make-innosetup.sh
+WORKDIR /app/modbus-server
+RUN chmod +x /opt/ci/make-innosetup.sh && \
+    DEPLOY_DIR=/app/modbus-server/deploy \
+    SETUP_DIR=/app/modbus-server/setup \
+    /opt/ci/make-innosetup.sh
 
-WORKDIR /app/modbus-server/setup
-
-RUN set -eux; \
-    . /app/modbus-server/deploy/appinfo.env; \
-    sed -e "s|@APP_VERSION@|${APP_VERSION}|g" \
-        -e "s|@APP_NAME_RU@|${APP_NAME_RU}|g" \
-        -e "s|@APP_NAME_EN@|${APP_NAME_EN}|g" \
-        -e "s|@APP_NAME_BIN@|${APP_NAME_BIN}|g" \
-        -e "s|@ICON_NAME@|${ICON_NAME}|g" \
-        -e "s|@DIST_KIT_NAME@|${DIST_KIT_NAME}|g" \
-        setup.iss > setup_filled.iss; \
-    iscc setup_filled.iss; \
-    ls -la ./*.exe
-
-# ── packager ──
 FROM alpine:latest AS packager
+COPY --from=innosetup /app/modbus-server/setup/*.exe /staging/
 
-COPY --from=deploy    /deploy/ModbusServerDistributionKit /staging/ModbusServerDistributionKit
-COPY --from=innosetup /app/modbus-server/setup/*.exe      /staging/
-
-RUN ls -la /staging/
-
-# ── export ──
+# Для GitHub CI (только установщик Inno Setup)
 FROM scratch AS export
-###COPY --from=packager /staging/ModbusServerDistributionKit /ModbusServerDistributionKit
 COPY --from=packager /staging/*.exe /
 
-# ── final ──
+# Для локальной сборки (EXPORT_MODE=dev: установщик + папка дистрибутива)
+FROM scratch AS export-dev
+COPY --from=packager /staging/*.exe /
+COPY --from=deploy /deploy/ModbusServerDistributionKit /ModbusServerDistributionKit
+
 FROM build AS final

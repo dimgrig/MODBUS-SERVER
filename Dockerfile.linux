@@ -1,275 +1,86 @@
 # syntax=docker/dockerfile:1
-# ============================================================================
-# Dockerfile.linux — modbus-server, Linux amd64
-#
-#   build     — cmake + install (/opt/modbus-server/qt<N>/<ver>)
-#   deploy    — cqtdeployer + prune → ModbusServerDistributionKit/
-#   test      — smoke ИМЕННО bundle (LD_LIBRARY_PATH=<bundle>/lib)
-#   packager  — DistributionKit + .deb
-#   export    — FROM scratch
-#   final     — FROM build
-#
-# Qt5 legacy: -DBASE_DEPS_IMAGE=base-deps-linux:latest
-#             -DQT_VERSION_MAJOR=5 -DQT6_INSTALL_PREFIX=
-# Qt6:        -DBASE_DEPS_IMAGE=base-deps-linux-qt6:latest
-#             -DQT_VERSION_MAJOR=6 -DQT6_INSTALL_PREFIX=/opt/Qt/6.8.0/gcc_64
-# ============================================================================
 ARG BASE_DEPS_IMAGE=base-deps-linux-qt6:latest
 
 FROM ${BASE_DEPS_IMAGE} AS build
 
 ARG CORE_SDK_VERSION=1.1.0
 ARG CORE_SDK_URL=
+ARG CORE_SDK_SHA256=
 ARG QT_VERSION_MAJOR=6
 ARG QT6_INSTALL_PREFIX=/opt/Qt/6.8.0/gcc_64
 ARG CORE_INSTALL_BASE=/opt/modbus-server
 ARG CMAKE_TOOLCHAIN_FILE=
 ARG BUILD_TYPE=Release
-ARG CORE_SDK_SHA256=
 
-ENV LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8 \
-    QT_QPA_PLATFORM=offscreen
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 QT_QPA_PLATFORM=offscreen
 
-# 1) Core SDK
-COPY .ci/scripts/fetch-core-sdk.sh /usr/local/bin/fetch-core-sdk.sh
-RUN echo "core-sdk: v${CORE_SDK_VERSION} sha=${CORE_SDK_SHA256}" && \
-    chmod +x /usr/local/bin/fetch-core-sdk.sh && \
-    fetch-core-sdk.sh "${CORE_SDK_VERSION}" "${CORE_SDK_URL}" \
+COPY .ci/scripts/fetch-core-sdk.sh /opt/ci/fetch-core-sdk.sh
+COPY .ci/scripts/build-app.sh       /opt/ci/build-app.sh
+RUN chmod +x /opt/ci/*.sh && \
+    echo "core-sdk: v${CORE_SDK_VERSION} sha=${CORE_SDK_SHA256}" && \
+    /opt/ci/fetch-core-sdk.sh "${CORE_SDK_VERSION}" "${CORE_SDK_URL}" \
         "/opt/core/qt${QT_VERSION_MAJOR}/${CORE_SDK_VERSION}" \
         "${QT_VERSION_MAJOR}" && \
     ln -sfn "/opt/core/qt${QT_VERSION_MAJOR}/${CORE_SDK_VERSION}" \
             "/opt/core/qt${QT_VERSION_MAJOR}/latest" && \
-    ln -sfn "/opt/core/qt${QT_VERSION_MAJOR}/latest" \
-            "/opt/core/latest" && \
-    test -f "/opt/core/latest/lib/cmake/Core/CoreConfig.cmake"
+    ln -sfn "/opt/core/qt${QT_VERSION_MAJOR}/latest" "/opt/core/latest"
 
-# 2) Сборка
 WORKDIR /app
 COPY . /app/modbus-server/
 WORKDIR /app/modbus-server
 
-RUN set -eux; \
-    V="$(tr -d '[:space:]' < VERSION)"; \
-    CMAKE_PREFIX_ARG=""; \
-    if [ "${QT_VERSION_MAJOR}" = "6" ] && [ -n "${QT6_INSTALL_PREFIX}" ]; then \
-        CMAKE_PREFIX_ARG="-DCMAKE_PREFIX_PATH=${QT6_INSTALL_PREFIX}"; \
-    fi; \
-    CMAKE_TOOLCHAIN_ARG=""; \
-    if [ -n "${CMAKE_TOOLCHAIN_FILE}" ]; then \
-        CMAKE_TOOLCHAIN_ARG="-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"; \
-    fi; \
-    DEST="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
-    CORE_SDK="/opt/core/qt${QT_VERSION_MAJOR}/latest"; \
-    mkdir -p "${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}"; \
-    cmake -S . -B build \
-        -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-        -DQT_VERSION_MAJOR="${QT_VERSION_MAJOR}" \
-        -DCore_DIR="${CORE_SDK}/lib/cmake/Core" \
-        -DCMAKE_INSTALL_PREFIX="${DEST}" \
-        ${CMAKE_PREFIX_ARG} \
-        ${CMAKE_TOOLCHAIN_ARG}; \
-    cmake --build build -j"$(nproc)"; \
-    cmake --install build; \
-    test -x "${DEST}/bin/modbus-server"; \
-    test -f "${DEST}/appinfo.env"; \
-    ln -sfn "${DEST}" "${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/latest"; \
-    mkdir -p "${DEST}/lib"; \
-    for lib in libcore-lib libcore-journal-lib libcore-modbus-lib libcore-widgets-lib; do \
-        cp -a "${CORE_SDK}/lib/${lib}.so"* "${DEST}/lib/"; \
-    done
+ENV APP_NAME=modbus-server
+ENV CORE_LIBS="libcore-lib libcore-journal-lib libcore-modbus-lib libcore-widgets-lib"
+RUN /opt/ci/build-app.sh
 
-# 3) deploy — cqtdeployer + prune
 FROM build AS deploy
+ARG QT_VERSION_MAJOR
+ARG QT6_INSTALL_PREFIX
+ARG CORE_INSTALL_BASE
 
-RUN set -eux; \
-    V="$(tr -d '[:space:]' < /app/modbus-server/VERSION)"; \
-    SRC="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}"; \
-    SDK_LIB="/opt/core/qt${QT_VERSION_MAJOR}/latest/lib"; \
-    DEPLOY=/deploy; \
-    mkdir -p "$DEPLOY"; \
-    cp "${SRC}/bin/modbus-server" "$DEPLOY/"; \
-    cp "${SRC}/appinfo.env"       "$DEPLOY/"; \
-    . "$DEPLOY/appinfo.env"; \
-    DIST="${DEPLOY}/${DIST_KIT_NAME}"; \
-    if [ "${QT_VERSION_MAJOR}" = "6" ]; then \
-        QMAKE_BIN="${QT6_INSTALL_PREFIX}/bin/qmake"; \
-        EXTRA_LIBDIR="-libDir ${QT6_INSTALL_PREFIX}/lib"; \
-    else \
-        QMAKE_BIN="$(command -v qmake)"; \
-        EXTRA_LIBDIR=""; \
-    fi; \
-    cqtdeployer -bin "$DEPLOY/$APP_NAME_BIN" \
-        -qmake "${QMAKE_BIN}" \
-        -targetDir "$DIST" \
-        -libDir "${SDK_LIB}" \
-        ${EXTRA_LIBDIR} \
-        -extraLibs libcore-lib.so \
-        -extraLibs libcore-journal-lib.so \
-        -extraLibs libcore-modbus-lib.so \
-        -extraLibs libcore-widgets-lib.so; \
-    mkdir -p "${DIST}/lib"; \
-    for lib in libcore-lib libcore-journal-lib libcore-modbus-lib libcore-widgets-lib; do \
-        if ls "${SDK_LIB}/${lib}.so"* >/dev/null 2>&1; then \
-            cp -av "${SDK_LIB}/${lib}.so"* "${DIST}/lib/"; \
-        else \
-            echo "FATAL: ${SDK_LIB}/${lib}.so* not found in SDK" >&2; \
-            ls -la "${SDK_LIB}" >&2 || true; \
-            exit 1; \
-        fi; \
-    done; \
-    test -x "${DIST}/bin/${APP_NAME_BIN}"
+COPY .ci/scripts/deploy-linux.sh /opt/ci/deploy-linux.sh
+RUN chmod +x /opt/ci/deploy-linux.sh && \
+    V="$(tr -d '[:space:]' < VERSION)" && \
+    LOCAL_INSTALL="${CORE_INSTALL_BASE}/qt${QT_VERSION_MAJOR}/${V}" \
+    APP_NAME_BIN="${APP_NAME}" \
+    DIST_NAME=ModbusServerDistributionKit \
+    DEPLOY_DIR=/deploy \
+    QT_VERSION_MAJOR="${QT_VERSION_MAJOR}" \
+    QT6_INSTALL_PREFIX="${QT6_INSTALL_PREFIX}" \
+    ARCH_TRIPLET=x86_64-linux-gnu \
+    CORE_LIBS="libcore-lib libcore-journal-lib libcore-modbus-lib libcore-widgets-lib" \
+    /opt/ci/deploy-linux.sh
 
-# 4) Qt libs/plugins explicit + prune (единый список для Qt5 и Qt6)
-RUN set -eux; \
-    . /deploy/appinfo.env; \
-    DIST="/deploy/${DIST_KIT_NAME}"; \
-    mkdir -p "$DIST/lib" "$DIST/plugins"; \
-    if [ "${QT_VERSION_MAJOR}" = "6" ]; then \
-        QT_LIBDIR="${QT6_INSTALL_PREFIX}/lib"; \
-        QT_PLUGINS="${QT6_INSTALL_PREFIX}/plugins"; \
-        cp -d "${QT_LIBDIR}"/libQt6*.so* "${DIST}/lib/" 2>/dev/null || true; \
-    else \
-        QT_LIBDIR="/usr/lib/x86_64-linux-gnu"; \
-        QT_PLUGINS="/usr/lib/x86_64-linux-gnu/qt5/plugins"; \
-        for lib in Core DBus Gui Network PrintSupport SerialPort SerialBus Sql Svg Widgets XcbQpa; do \
-            cp -d "${QT_LIBDIR}/libQt5${lib}.so"* "${DIST}/lib/" 2>/dev/null || true; \
-        done; \
-    fi; \
-    # ── Транзитивные зависимости — ОДИНАКОВО для Qt5 и Qt6 ──
-    for pat in 'libicu*.so*' 'libssl.so*' 'libcrypto*.so*' \
-               'libpcre2-16.so*' 'libpcre2-8.so*' \
-               'libzstd.so*' 'libdouble-conversion.so*' \
-               'libmd4c.so*' 'libb2.so*'; do \
-        cp -d "${QT_LIBDIR}/"${pat} "${DIST}/lib/" 2>/dev/null || true; \
-    done; \
-    for plugin_dir in platforms imageformats iconengines styles sqldrivers tls; do \
-        if [ -d "${QT_PLUGINS}/${plugin_dir}" ]; then \
-            cp -r "${QT_PLUGINS}/${plugin_dir}" "${DIST}/plugins/"; \
-        fi; \
-    done; \
-    # ── prune системных libs (glibc / font stack / zlib) ──
-    rm -f "${DIST}/lib/"libc.so* \
-          "${DIST}/lib/"libm.so* \
-          "${DIST}/lib/"libdl.so* \
-          "${DIST}/lib/"libpthread.so* \
-          "${DIST}/lib/"librt.so* \
-          "${DIST}/lib/"libnsl.so* \
-          "${DIST}/lib/"libresolv.so* \
-          "${DIST}/lib/"libutil.so* \
-          "${DIST}/lib/"libnss*.so* \
-          "${DIST}/lib/"ld-linux*.so*; \
-    rm -f "${DIST}/lib/"libharfbuzz*.so* \
-          "${DIST}/lib/"libfontconfig*.so* \
-          "${DIST}/lib/"libfreetype*.so* \
-          "${DIST}/lib/"libgraphite2*.so* \
-          "${DIST}/lib/"libglib-2.0*.so* \
-          "${DIST}/lib/"libgobject-2.0*.so* \
-          "${DIST}/lib/"libgio-2.0*.so* \
-          "${DIST}/lib/"libz.so* \
-          "${DIST}/lib/"liblzma.so* \
-          "${DIST}/lib/"libbz2.so* \
-          "${DIST}/lib/"libpng*.so*; \
-    # ── только ICU-утилиты — ICU-кор оставляем (QtCore от них зависит) ──
-    rm -f "${DIST}/lib/"libicuio.so* \
-          "${DIST}/lib/"libicutest.so* \
-          "${DIST}/lib/"libicutu.so*; \
-    # ── sanity ──
-    if ls "${DIST}/lib/libc.so"* 2>/dev/null; then \
-        echo "FATAL: glibc leaked into bundle" >&2; exit 1; \
-    fi; \
-    if ! ls "${DIST}/lib/libQt6Core.so.6" >/dev/null 2>&1 && \
-       ! ls "${DIST}/lib/libQt5Core.so.5" >/dev/null 2>&1; then \
-        echo "FATAL: no libQt{5,6}Core in bundle" >&2; \
-        ls "${DIST}/lib/" >&2; exit 1; \
-    fi; \
-    test -f "${DIST}/lib/libcore-modbus-lib.so.1" \
-        || { echo "FATAL: libcore-modbus-lib.so.1 missing" >&2; exit 1; }; \
-    test -f "${DIST}/plugins/platforms/libqxcb.so" \
-        || { echo "FATAL: libqxcb.so missing" >&2; exit 1; }; \
-    if ! ls "${DIST}/lib/libicui18n.so."* >/dev/null 2>&1; then \
-        echo "FATAL: libicui18n missing in bundle" >&2; \
-        ls "${DIST}/lib/" >&2; exit 1; \
-    fi; \
-    if ! ls "${DIST}/lib/libicuuc.so."* >/dev/null 2>&1; then \
-        echo "FATAL: libicuuc missing in bundle" >&2; exit 1; \
-    fi; \
-    if ! ls "${DIST}/lib/libicudata.so."* >/dev/null 2>&1; then \
-        echo "FATAL: libicudata missing in bundle" >&2; exit 1; \
-    fi; \
-    echo "== ${DIST_KIT_NAME} (Qt${QT_VERSION_MAJOR}): $(ls -1 "${DIST}/lib" | wc -l) libs =="
-
-# 5) test — smoke bundle без системного Qt
 FROM deploy AS test
 ENV QT_QPA_PLATFORM=offscreen
-RUN set -eux; \
-    . /deploy/appinfo.env; \
-    DIST="/deploy/${DIST_KIT_NAME}"; \
-    LD_LIBRARY_PATH="${DIST}/lib" MODBUS_SMOKE=1 \
-        "${DIST}/bin/${APP_NAME_BIN}"; \
-    echo "=== test OK (bundle only, Qt${QT_VERSION_MAJOR}) ==="
+RUN . /deploy/appinfo.env && \
+    LD_LIBRARY_PATH="/deploy/${DIST_KIT_NAME}/lib" MODBUS_SMOKE=1 \
+        "/deploy/${DIST_KIT_NAME}/bin/${APP_NAME_BIN}" && \
+    echo "=== test OK ==="
 
-# 6) packager — .deb
 FROM debian:bookworm-slim AS packager
+ARG QT_VERSION_MAJOR=6
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends imagemagick && \
+    rm -rf /var/lib/apt/lists/*
+COPY --from=deploy /deploy /deploy
+COPY --from=build  /app/modbus-server/resources/modbus.ico /icon.ico
+COPY .ci/scripts/make-deb.sh /opt/ci/make-deb.sh
+RUN chmod +x /opt/ci/make-deb.sh && \
+    DIST_NAME=ModbusServerDistributionKit \
+    DEB_ARCH=amd64 \
+    DEPLOY_DIR=/deploy \
+    QT_VERSION_MAJOR="${QT_VERSION_MAJOR}" \
+    ICON_SRC=/icon.ico \
+    /opt/ci/make-deb.sh
 
-COPY --from=deploy /deploy/appinfo.env /staging/appinfo.env
-COPY --from=deploy /deploy/ModbusServerDistributionKit /staging/ModbusServerDistributionKit
-COPY --from=build  /app/modbus-server/resources/modbus.ico /tmp/modbus.ico
-
-RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends imagemagick; \
-    rm -rf /var/lib/apt/lists/*; \
-    convert "/tmp/modbus.ico[0]" -resize 256x256 "/staging/modbus.png"
-
-RUN set -eux; \
-    . /staging/appinfo.env; \
-    DEB_ARCH="$(dpkg --print-architecture)"; \
-    mkdir -p /deb-package/DEBIAN "/deb-package/opt/${APP_NAME_EN}"; \
-    cp -r "/staging/${DIST_KIT_NAME}"/* "/deb-package/opt/${APP_NAME_EN}/"; \
-    cp "/staging/${ICON_NAME}.png" "/deb-package/opt/${APP_NAME_EN}/${ICON_NAME}.png"; \
-    { \
-        echo "Package: ${PACKAGE_NAME}"; \
-        echo "Version: ${APP_VERSION}"; \
-        echo "Section: ${SECTION}"; \
-        echo "Priority: optional"; \
-        echo "Architecture: ${DEB_ARCH}"; \
-        echo "Maintainer: ${MAINTAINER}"; \
-        echo "Description: ${APP_NAME_RU}"; \
-        echo " Modbus TCP/RTU сервер на базе Core SDK"; \
-        echo "Depends: libc6 (>= 2.36), libstdc++6, libharfbuzz0b, libfontconfig1, libfreetype6, libglib2.0-0, libgraphite2-3, libzstd1, libpcre2-16-0, libssl3, libxcb1, libx11-6, libxcb-cursor0, libxkbcommon0, libxkbcommon-x11-0, libgl1"; \
-    } > /deb-package/DEBIAN/control; \
-    cat > /deb-package/DEBIAN/postinst <<POSTINST_EOF
-#!/bin/sh
-set -e
-mkdir -p /usr/share/applications
-cat > /usr/share/applications/${APP_NAME_EN}.desktop <<DESKTOP_EOF
-[Desktop Entry]
-Type=Application
-Name=${APP_NAME_RU}
-Comment=${APP_NAME_RU}
-Exec=/opt/${APP_NAME_EN}/bin/${APP_NAME_BIN}
-Icon=/opt/${APP_NAME_EN}/${ICON_NAME}.png
-Terminal=false
-Categories=Network;Utility;
-DESKTOP_EOF
-mkdir -p /usr/share/icons/hicolor/256x256/apps
-cp /opt/${APP_NAME_EN}/${ICON_NAME}.png /usr/share/icons/hicolor/256x256/apps/${ICON_NAME}.png
-ln -sf /opt/${APP_NAME_EN}/bin/${APP_NAME_BIN} /usr/local/bin/${APP_NAME_BIN}
-exit 0
-POSTINST_EOF
-
-RUN set -eux; \
-    . /staging/appinfo.env; \
-    DEB_ARCH="$(dpkg --print-architecture)"; \
-    chmod +x /deb-package/DEBIAN/postinst; \
-    dpkg-deb --build /deb-package "/staging/${PACKAGE_NAME}_${APP_VERSION}_${DEB_ARCH}.deb"; \
-    test -f "/staging/${PACKAGE_NAME}_${APP_VERSION}_${DEB_ARCH}.deb"
-
-# 7) export
+# Для GitHub CI (только .deb)
 FROM scratch AS export
-###COPY --from=packager /staging/ModbusServerDistributionKit /ModbusServerDistributionKit
-COPY --from=packager /staging/*.deb /
+COPY --from=packager /deploy/*.deb /
 
-# 8) final
+# Для локальной сборки (EXPORT_MODE=dev: .deb + папка дистрибутива)
+FROM scratch AS export-dev
+COPY --from=packager /deploy/*.deb /
+COPY --from=deploy /deploy/ModbusServerDistributionKit /ModbusServerDistributionKit
+
 FROM build AS final
